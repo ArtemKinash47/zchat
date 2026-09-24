@@ -1,4 +1,4 @@
-# zchat
+# ZCHAT
 
 ## VPWA project - messenger
 
