@@ -1,17 +1,59 @@
 <template>
-  <q-page class="flex flex-center">
-    <div class="column items-center">
-      <img
-        alt="Quasar logo"
-        src="~@/assets/quasar-logo-vertical.svg"
-        style="width: 200px; height: 200px"
-      />
-
-      <q-btn class="q-mt-md" color="primary" to="/second" label="Go to Second Page" no-caps />
+  <q-page class="conversation-page q-pa-md">
+    <div class="conversation-heading">
+      <div v-if="conversationTitle" class="text-h5">{{ conversationTitle }}</div>
+      <div v-else class="text-subtitle1 text-grey-7">Select a conversation</div>
     </div>
+
+    <q-input
+      v-if="conversationTitle"
+      v-model="text"
+      outlined
+      class="message-composer"
+      label="Message"
+      placeholder="Type a message"
+    >
+      <template #append>
+        <div class="composer-icons">
+          <q-icon name="send" />
+          <q-icon name="attach_file" />
+        </div>
+      </template>
+    </q-input>
   </q-page>
 </template>
 
 <script setup>
-//
+import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const text = ref('')
+
+const conversationTitle = computed(() => {
+  const channel = route.query.channel
+  if (typeof channel === 'string' && channel) return `# ${channel}`
+
+  const name = route.query.name
+  if (typeof name !== 'string' || !name) return ''
+
+  return `Direct message with ${name}`
+})
 </script>
+
+<style scoped>
+.conversation-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.message-composer {
+  margin-top: auto;
+}
+
+.composer-icons {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+</style>

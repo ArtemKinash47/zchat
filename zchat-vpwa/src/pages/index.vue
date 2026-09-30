@@ -1,20 +1,26 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
+  <q-layout view="hHh LpR fFr">
     <q-header elevated>
       <q-toolbar>
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
 
-        <q-toolbar-title> Quasar App </q-toolbar-title>
+        <q-toolbar-title class="absolute-center"> ZCHAT </q-toolbar-title>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <q-space />
+        <q-avatar color="white" text-color="primary">JD</q-avatar>
+
       </q-toolbar>
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
-        <q-item-label header> Essential Links </q-item-label>
+        <q-item-label header>DIRECT MESSAGES</q-item-label>
 
-        <EssentialLink v-for="link in linksList" :key="link.label" v-bind="link" />
+        <ChatLink v-for="chat in chatLinks" :key="chat.name" v-bind="chat" />
+
+        <q-item-label header>CHANNELS</q-item-label>
+
+        <ChannelLink v-for="channel in channelLinks" :key="channel.name" v-bind="channel" />
       </q-list>
     </q-drawer>
 
@@ -26,50 +32,33 @@
 
 <script setup>
 import { ref } from 'vue'
-import EssentialLink from '@/components/EssentialLink.vue'
+import ChatLink from '@/components/ChatLink.vue'
+import ChannelLink from '@/components/ChannelLink.vue'
 
-const linksList = [
+const chatLinks = [
   {
-    label: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev',
+    name: 'Alex Morgan',
+    hasNickname: true,
+    nickname: '@alexmorgan',
+    avatar: 'https://cdn.quasar.dev/img/avatar.png',
+    isOnline: true,
   },
   {
-    label: 'GitHub',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework',
+    name: 'John Rivera',
+    nickname: '',
+    isOnline: false,
   },
   {
-    label: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev',
+    name: 'Marko Doe',
+    nickname: '',
+    isOnline: false,
   },
+]
+
+const channelLinks = [
   {
-    label: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev',
-  },
-  {
-    label: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev',
-  },
-  {
-    label: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev',
-  },
-  {
-    label: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev',
+    name: 'Design Team',
+    isPrivate: true,
   },
 ]
 
