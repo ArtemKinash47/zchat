@@ -52,13 +52,6 @@
 					hint="Enter your password to save changes"
 					class="profile-input"
 				>
-					<template #append>
-						<q-icon
-							:name="isPwd ? 'visibility_off' : 'visibility'"
-							class="cursor-pointer"
-							@click="isPwd = !isPwd"
-						/>
-					</template>
 				</q-input>
 				<q-input
 					v-model="passwordConf"
@@ -93,7 +86,6 @@ const nickname = ref('')
 const email = ref('')
 const password = ref('')
 const passwordConf = ref('')
-const isPwd = ref(true)
 const isPwdConf = ref(true)
 </script>
 

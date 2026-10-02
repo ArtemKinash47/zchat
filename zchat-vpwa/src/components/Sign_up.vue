@@ -1,35 +1,37 @@
 <template>
     <h1 class="reg-title">Sign In</h1>
-
-     <q-input
-      class="registration-input"
-      clearable
-      clear-icon="close"
-      filled
-      color="primary"
-      v-model="text"
-      label="Nickname"
-    />
-    <q-input
-      class="registration-input"
-      v-model="password"
-      filled
-      :type="isPwd ? 'password' : 'text'"
-      hint="Confirm Password"
-    >
-      <template #append>
-        <q-icon
-          :name="isPwd ? 'visibility_off' : 'visibility'"
-          class="cursor-pointer"
-          @click="isPwd = !isPwd"
-        />
-      </template>
-    </q-input>
-    <q-btn
-      class="reg-confirm-btn"
-      color="primary"
-      label="Sign In"
-    />
+    <q-form @submit.prevent="onSubmit">
+      <q-input
+        class="registration-input"
+        clearable
+        clear-icon="close"
+        filled
+        color="primary"
+        v-model="text"
+        label="Nickname"
+      />
+      <q-input
+        class="registration-input"
+        v-model="password"
+        filled
+        :type="isPwd ? 'password' : 'text'"
+        hint="Confirm Password"
+      >
+        <template #append>
+          <q-icon
+            :name="isPwd ? 'visibility_off' : 'visibility'"
+            class="cursor-pointer"
+            @click="isPwd = !isPwd"
+          />
+        </template>
+      </q-input>
+      <q-btn
+        type="submit"
+        class="reg-confirm-btn"
+        color="primary"
+        label="Sign In"
+      />
+    </q-form>
 
 </template>
 <style scoped>
@@ -55,6 +57,13 @@
 </style>
 <script setup>
 import { ref } from 'vue'
+
+const emit = defineEmits(['submit'])
+const nickname = ref('')
 const password = ref('')
 const isPwd = ref(true)
+
+function onSubmit() {
+  emit('submit', { nickname: nickname.value, password: password.value })
+}
 </script>

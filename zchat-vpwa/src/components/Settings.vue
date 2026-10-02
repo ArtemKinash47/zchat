@@ -22,11 +22,16 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuth } from '@/stores/auth'
 
+const router = useRouter()
+const { logout } = useAuth()
 const lightMode = ref(true)
 
 function onItemClick() {
-  console.log('Clicked on an Item')
+  logout()
+  router.push('/auth')
 }
 </script>
 

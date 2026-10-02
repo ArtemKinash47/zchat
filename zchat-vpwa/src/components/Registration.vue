@@ -1,64 +1,67 @@
 <template>
     <h1 class="reg-title">Registration</h1>
-    <q-input
-      class="registration-input"
-      clearable
-      clear-icon="close"
-      filled
-      color="primary"
-      v-model="text"
-      label="Name"
-    />
-     
-    <q-input
-      class="registration-input"
-      clearable
-      clear-icon="close"
-      filled
-      color="primary"
-      v-model="text"
-      label="Surname"
-    />
-    
-     <q-input
-      class="registration-input"
-      clearable
-      clear-icon="close"
-      filled
-      color="primary"
-      v-model="text"
-      label="Nickname"
-    />
+    <q-form @submit.prevent="onSubmit">
+      <q-input
+        class="registration-input"
+        clearable
+        clear-icon="close"
+        filled
+        color="primary"
+        v-model="name"
+        label="Name"
+      />
+      
+      <q-input
+        class="registration-input"
+        clearable
+        clear-icon="close"
+        filled
+        color="primary"
+        v-model="surname"
+        label="Surname"
+      />
+      
+      <q-input
+        class="registration-input"
+        clearable
+        clear-icon="close"
+        filled
+        color="primary"
+        v-model="nickname"
+        label="Nickname"
+      />
 
-     <q-input
-      class="registration-input"
-      v-model="email"
-      filled
-      type="email"
-      hint="Email"
-     />
+      <q-input
+        class="registration-input"
+        v-model="email"
+        filled
+        type="email"
+        hint="Email"
+      />
 
-    <q-input class="registration-input" v-model="password" filled type="password" hint="Enter Password" />
-     <q-input
-      class="registration-input"
-      v-model="password"
-      filled
-      :type="isPwd ? 'password' : 'text'"
-      hint="Confirm Password"
-    >
-      <template #append>
-        <q-icon
-          :name="isPwd ? 'visibility_off' : 'visibility'"
-          class="cursor-pointer"
-          @click="isPwd = !isPwd"
-        />
-      </template>
-    </q-input>
-    <q-btn
-      class="reg-confirm-btn"
-      color="primary"
-      label="Register"
-    />
+      <q-input class="registration-input" v-model="password" filled type="password" hint="Enter Password" />
+      <q-input
+        class="registration-input"
+        v-model="passwordConf"
+        filled
+        :type="isPwd ? 'password' : 'text'"
+        hint="Confirm Password"
+      >
+        <template #append>
+          <q-icon
+            :name="isPwd ? 'visibility_off' : 'visibility'"
+            class="cursor-pointer"
+            @click="isPwd = !isPwd"
+          />
+        </template>
+      </q-input>
+      <q-btn
+        type="submit"
+        class="reg-confirm-btn"
+        color="primary"
+        label="Register"
+      />
+    </q-form>
 
 </template>
 <style scoped>
@@ -84,7 +87,17 @@
 </style>
 <script setup>
 import { ref } from 'vue'
-const password = ref('')
-const isPwd = ref(true)
+
+const emit = defineEmits(['submit'])
+const name = ref('')
+const surname = ref('')
+const nickname = ref('')
 const email = ref('')
+const password = ref('')
+const passwordConf = ref('')
+const isPwd = ref(true)
+
+function onSubmit() {
+  emit('submit', { name: name.value, surname: surname.value, nickname: nickname.value, email: email.value, password: password.value })
+}
 </script>

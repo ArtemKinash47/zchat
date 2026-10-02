@@ -48,6 +48,7 @@ export default [
         Capacitor: 'readonly',
         chrome: 'readonly', // BEX related
         browser: 'readonly', // BEX related
+        definePage: 'readonly',
       },
     },
 
