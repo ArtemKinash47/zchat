@@ -8,25 +8,12 @@
 
         <q-space />
         <div class="nav_btns">
-          <q-btn round flat>
+          <q-btn round flat aria-label="Open profile" @click="profileWindowOpen = true">
             <q-avatar color="white" text-color="primary">
               JD
-              <q-menu>
-                <q-list dense style="min-width: 100px">
-                  <q-item clickable v-close-popup>
-                    <q-item-section>CHANGE INFO</q-item-section>
-                  </q-item>
-                  <q-separator />
-                  <q-item clickable v-close-popup>
-                    <q-item-section>
-                      <q-btn @click="openRegistrationForm">LOGOUT</q-btn>
-                    </q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu>
             </q-avatar>
           </q-btn>
-          <q-btn flat round color="white" icon="settings" />
+          <Settings />
         </div>
 
 
@@ -58,6 +45,7 @@ import { ref } from 'vue'
 import ChatLink from '@/components/ChatLink.vue'
 import ChannelLink from '@/components/ChannelLink.vue'
 import MyProfile from '@/components/MyProfile.vue'
+import Settings from '@/components/Settings.vue'
 
 const chatLinks = [
   {

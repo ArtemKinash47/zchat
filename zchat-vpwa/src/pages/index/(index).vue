@@ -61,7 +61,7 @@ const conversationTitle = computed(() => {
   return `Direct message with ${name}`
 })
 
-import RegistrationForm from '@/components/registation.vue'   
+import RegistrationForm from '@/components/Registration.vue'   
 import SignUp from '@/components/Sign_up.vue'
 </script>
 
