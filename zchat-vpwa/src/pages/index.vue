@@ -8,22 +8,31 @@
 
         <q-space />
         <div class="nav_btns">
-          <q-btn
-            round
-            flat
-            aria-label="Open profile"
-            @click="profileWindowOpen = true"
-          >
-            <q-avatar color="white" text-color="primary">JD</q-avatar>
+          <q-btn round flat>
+            <q-avatar color="white" text-color="primary">
+              JD
+              <q-menu>
+                <q-list dense style="min-width: 100px">
+                  <q-item clickable v-close-popup>
+                    <q-item-section>CHANGE INFO</q-item-section>
+                  </q-item>
+                  <q-separator />
+                  <q-item clickable v-close-popup>
+                    <q-item-section>
+                      <q-btn @click="openRegistrationForm">LOGOUT</q-btn>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
+            </q-avatar>
           </q-btn>
-          <q-btn flat round color="white" icon="settings">
-          </q-btn>
+          <q-btn flat round color="white" icon="settings" />
         </div>
-        
+
 
       </q-toolbar>
     </q-header>
-
+    
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
         <q-item-label header>DIRECT MESSAGES</q-item-label>
@@ -56,17 +65,20 @@ const chatLinks = [
     hasNickname: true,
     nickname: '@alexmorgan',
     avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    isOnline: true,
+    isOnline: 1,
+    unreadCount: 3,
   },
   {
     name: 'John Rivera',
     nickname: '',
-    isOnline: false,
+    isOnline: -1,
+    unreadCount: 0,
   },
   {
     name: 'Marko Doe',
     nickname: '',
-    isOnline: false,
+    isOnline: 0,
+    unreadCount: 0,
   },
 ]
 
@@ -74,6 +86,8 @@ const channelLinks = [
   {
     name: 'Design Team',
     isPrivate: true,
+    unreadCount: 3,
+    onlineCount: 5,
   },
 ]
 

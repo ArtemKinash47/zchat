@@ -9,12 +9,21 @@
     }"
   >
     <q-item-section avatar>
-      <q-avatar size="40px" color="blue-grey-1" text-color="blue-grey-9">
-        <img v-if="props.avatar" :src="props.avatar" :alt="`${props.name} avatar`" />
-        <span v-else>{{ getInitial(props.name) }}</span>
-      </q-avatar>
-    </q-item-section>
+      <div class="avatar-wrapper">
+        <q-avatar size="40px" color="blue-grey-1" text-color="blue-grey-9">
+          <img v-if="props.avatar" :src="props.avatar" :alt="`${props.name} avatar`" />
+          <span v-else>{{ getInitial(props.name) }}</span>
+        </q-avatar>
 
+        <q-badge
+          :color="props.onlineCount > 0 ? 'positive' : 'grey'"
+          rounded
+          class="online-badge"
+        >
+          {{ props.onlineCount }}
+        </q-badge>
+      </div>
+    </q-item-section>
     <q-item-section>
       <q-item-label>{{ props.name}}</q-item-label>
       <q-item-label v-if="props.caption" caption class="text-grey-7">
@@ -23,14 +32,31 @@
     </q-item-section>
     
     <q-item-section side>
-      <q-badge :color="!props.isPrivate ? 'green' : 'primary'">
-        {{ props.isPrivate ? 'Private' : 'Public' }}
+      <q-badge v-if="props.unreadCount > 0" rounded color="accent" >
+        {{ props.unreadCount }}
       </q-badge>
     </q-item-section>
 
   </q-item>
 </template>
+<style scoped>
+.avatar-wrapper {
+  position: relative;
+  display: inline-block;
+}
 
+.online-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  justify-content: center;
+  border: 2px solid white;
+  font-size: 11px;
+}
+</style>
 <script setup>
 const props = defineProps({
   name: {
@@ -51,6 +77,14 @@ const props = defineProps({
   isPrivate: {
     type: Boolean,
     default: false,
+  },
+  unreadCount: {
+    type: Number,
+    default: 0,
+  },
+  onlineCount: {
+    type: Number,
+    default: 0,
   },
 })
 

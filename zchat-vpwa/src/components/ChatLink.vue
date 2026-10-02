@@ -9,10 +9,13 @@
     }"
   >
     <q-item-section avatar>
-      <q-avatar size="40px" color="blue-grey-1" text-color="blue-grey-9">
-        <img v-if="props.avatar" :src="props.avatar" :alt="`${props.name} avatar`" />
-        <span v-else>{{ getInitial(props.name) }}</span>
-      </q-avatar>
+      <div class="relative-position">
+        <q-avatar size="40px" color="blue-grey-1" text-color="blue-grey-9">
+          <img v-if="props.avatar" :src="props.avatar" :alt="`${props.name} avatar`" />
+          <span v-else>{{ getInitial(props.name) }}</span>
+        </q-avatar>
+        <q-badge :color="statusColor" rounded class="absolute-bottom-right"/>
+      </div>
     </q-item-section>
 
     <q-item-section>
@@ -23,8 +26,8 @@
     </q-item-section>
     
     <q-item-section side>
-      <q-badge :color="props.isOnline ? 'green' : 'primary'">
-        {{ props.isOnline ? 'Online' : 'Offline' }}
+      <q-badge v-if="props.unreadCount > 0" rounded color="accent" >
+        {{ props.unreadCount }}
       </q-badge>
     </q-item-section>
 
@@ -32,6 +35,12 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+const statusColor = computed(() => {
+  if (props.isOnline === 1) return 'positive'
+  if (props.isOnline === -1) return 'negative'
+  return 'grey'
+})
 const props = defineProps({
   name: {
     type: String,
@@ -59,9 +68,14 @@ const props = defineProps({
   },
 
   isOnline: {
-    type: Boolean,
-    default: false,
+    type: Number,
+    default: 0,
   },
+  unreadCount: {
+    type: Number,
+    default: 0,
+  },
+
 })
 
 function getInitial(name) {
