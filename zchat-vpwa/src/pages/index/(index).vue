@@ -6,7 +6,6 @@
     </div>
 
     <q-input
-      v-if="conversationTitle"
       v-model="text"
       outlined
       class="message-composer"

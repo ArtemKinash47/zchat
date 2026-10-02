@@ -7,7 +7,19 @@
         <q-toolbar-title class="absolute-center"> ZCHAT </q-toolbar-title>
 
         <q-space />
-        <q-avatar color="white" text-color="primary">JD</q-avatar>
+        <div class="nav_btns">
+          <q-btn
+            round
+            flat
+            aria-label="Open profile"
+            @click="profileWindowOpen = true"
+          >
+            <q-avatar color="white" text-color="primary">JD</q-avatar>
+          </q-btn>
+          <q-btn flat round color="white" icon="settings">
+          </q-btn>
+        </div>
+        
 
       </q-toolbar>
     </q-header>
@@ -27,6 +39,8 @@
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <MyProfile v-model="profileWindowOpen" />
   </q-layout>
 </template>
 
@@ -34,6 +48,7 @@
 import { ref } from 'vue'
 import ChatLink from '@/components/ChatLink.vue'
 import ChannelLink from '@/components/ChannelLink.vue'
+import MyProfile from '@/components/MyProfile.vue'
 
 const chatLinks = [
   {
@@ -63,8 +78,19 @@ const channelLinks = [
 ]
 
 const leftDrawerOpen = ref(false)
+const profileWindowOpen = ref(false)
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
 }
 </script>
+
+<style scoped>
+
+.nav_btns {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+</style>
