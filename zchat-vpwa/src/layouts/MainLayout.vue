@@ -7,7 +7,9 @@
         <q-space />
         <div class="nav_btns">
           <q-btn round flat aria-label="Open profile" @click="profileWindowOpen = true">
-            <q-avatar color="white" text-color="primary">JD</q-avatar>
+            <q-avatar color="white" text-color="primary">
+              <img src="https://cdn.quasar.dev/img/avatar4.jpg" />
+            </q-avatar>
           </q-btn>
           <Settings />
         </div>
@@ -39,7 +41,12 @@
           >
             <q-tab-panel name="Direct Messages" class="q-pa-none">
               <q-list>
-                <ChatLink v-for="chat in chatLinks" :key="chat.name" v-bind="chat" />
+                <ChatLink
+                  v-for="chat in chatLinks"
+                  :key="chat.name"
+                  v-bind="chat"
+                  @clear-unread="clearChatUnread"
+                />
               </q-list>
             </q-tab-panel>
 
@@ -49,6 +56,7 @@
                   v-for="channel in channelLinks"
                   :key="channel.name"
                   v-bind="channel"
+                  @clear-unread-channel="clearChannelUnread"
                 />
               </q-list>
             </q-tab-panel>
@@ -76,7 +84,7 @@
     </q-page-container>
 
     <MyProfile v-model="profileWindowOpen" />
-    
+
     <q-dialog v-model="addChatOpen" backdrop-filter="blur(4px) saturate(150%)">
       <q-card style="min-width: 750px; height: 500px">
         <q-tabs v-model="tab_addChat" class="text-teal">
@@ -99,13 +107,13 @@
   </q-layout>
 </template>
 <script setup>
-import { ref } from 'vue'
+import { provide, ref } from 'vue'
 import ChatLink from '@/components/ChatLink.vue'
 import ChannelLink from '@/components/ChannelLink.vue'
 import MyProfile from '@/components/MyProfile.vue'
 import Settings from '@/components/Settings.vue'
 const tab = ref('Direct Messages')
-const chatLinks = [
+const chatLinks = ref([
   {
     name: 'Alex Morgan',
     hasNickname: true,
@@ -115,27 +123,39 @@ const chatLinks = [
     unreadCount: 3,
   },
   {
-    name: 'John Rivera',
+    name: 'Den Verstappen',
     nickname: '',
+    avatar: 'https://img.redbull.com/images/c_crop,x_914,y_1637,h_3171,w_3171/c_fill,g_auto,w_308,h_308/q_auto:low,f_auto/redbullcom/2022/5/5/esxtfazwc5k0xntwv20i/max-verstappen-profile-pic',
     isOnline: -1,
     unreadCount: 0,
   },
   {
-    name: 'Marko Doe',
+    name: 'Leybron Jahames',
     nickname: '',
+    avatar: 'https://cdn.nba.com/headshots/nba/latest/1040x760/2544.png',
     isOnline: 0,
     unreadCount: 0,
   },
-]
+])
 
-const channelLinks = [
+const channelLinks = ref([
   {
     name: 'Design Team',
     isPrivate: true,
     unreadCount: 3,
     onlineCount: 5,
+    usersList: ['You', 'Alex Morgan', 'Den Verstappen'],
   },
-]
+  {
+    name: 'Infinity Chat',
+    isPrivate: false,
+    unreadCount: 0,
+    onlineCount: 0,
+    usersList: ['You', 'Den Verstappen', 'Leybron Jahames'],
+  },
+])
+
+provide('channelLinks', channelLinks)
 
 const leftDrawerOpen = ref(false)
 const profileWindowOpen = ref(false)
@@ -145,17 +165,26 @@ const tab_addChat = ref('one')
 function openAddChat() {
   addChatOpen.value = true
 }
+
+function clearChatUnread(chatName) {
+  const chat = chatLinks.value.find(({ name }) => name === chatName)
+  if (chat) chat.unreadCount = 0
+}
+
+function clearChannelUnread(channelName) {
+  const channel = channelLinks.value.find(({ name }) => name === channelName)
+  if (channel) channel.unreadCount = 0
+}
+
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
 }
 </script>
 
 <style scoped>
-
 .nav_btns {
   display: flex;
   align-items: center;
   gap: 15px;
 }
-
 </style>

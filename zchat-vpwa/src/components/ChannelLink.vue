@@ -7,6 +7,7 @@
         channel: props.name,
       },
     }"
+    @click="emit('clear-unread-channel', props.name)"
   >
     <q-item-section avatar>
       <div class="avatar-wrapper">
@@ -58,6 +59,8 @@
 }
 </style>
 <script setup>
+const emit = defineEmits(['clear-unread-channel'])
+
 const props = defineProps({
   name: {
     type: String,
@@ -86,6 +89,10 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  usersList: {
+    type: Array,
+    default: () => []
+  }
 })
 
 function getInitial(name) {
