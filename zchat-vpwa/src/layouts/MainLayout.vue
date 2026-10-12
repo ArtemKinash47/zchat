@@ -69,7 +69,7 @@
           <q-btn
             push
             color="positive"
-            text-color="primary"
+            text-color="secondary"
             label="Add Chat"
             class="full-width"
             no-caps
@@ -94,12 +94,86 @@
         <q-separator />
         <q-tab-panels v-model="tab_addChat" animated>
           <q-tab-panel name="one">
-            ewwrfraf
+            <q-input
+              outlined
+              v-model="text_200"
+              bottom-slots
+              label="Enter nickname or channel name"
+              stack-label
+              maxlength="67"
+              :dense="dense"
+            >
+              <template #before>
+                <q-avatar>
+                  <img alt="User avatar" src="https://cdn.quasar.dev/img/avatar5.jpg" />
+                </q-avatar>
+              </template>
+
+              <template #append>
+                <q-icon
+                  v-if="text_200 !== ''"
+                  name="close"
+                  class="cursor-pointer"
+                  @click="text_200 = ''"
+                />
+              </template>
+
+              <template #after>
+                <q-btn round dense flat icon="send" @click="text_200 = ''" />
+              </template>
+            </q-input>
           </q-tab-panel>
           <q-tab-panel name="two">
-            With so much content to display at once, and often so little screen
-            real-estate, Cards have fast become the design pattern of choice for
-            many companies, including the likes of Google and Twitter.
+           <q-input
+              outlined
+              v-model="text_300"
+              bottom-slots
+              label="Enter channel name"
+              stack-label
+              :dense="dense"
+            >
+            </q-input>
+            <div class="q-pa-md">
+              <q-option-group :options="options" type="radio" v-model="group" />
+            </div>
+            <q-select
+              outlined
+              v-model="text_400"
+              use-input
+              hide-selected
+              fill-input
+              hide-dropdown-icon
+              hide-no-option
+              input-debounce="150"
+              :options="options_fill"
+              @filter="filterFn"
+              @input-value="setModel"
+              behavior="menu"
+              popup-content-style="max-height: 240px"
+              label="Enter nickname or channel name"
+              stack-label
+              bottom-slots
+              :dense="dense"
+            >
+              <template #no-option>
+                <q-item>
+                  <q-item-section class="text-grey">Žiadne návrhy</q-item-section>
+                </q-item>
+              </template>
+
+              <template #append>
+                <q-icon
+                  v-if="text_400 !== ''"
+                  name="close"
+                  class="cursor-pointer"
+                  @click.stop="text_400 = ''"
+                />
+              </template>
+
+              <template #after>
+                <q-btn v-if="text_400 !== ''" round dense flat icon="add" @click="text_400 = ''" />
+              </template>
+            </q-select>
           </q-tab-panel>
         </q-tab-panels>
       </q-card>
@@ -107,11 +181,39 @@
   </q-layout>
 </template>
 <script setup>
-import { provide, ref } from 'vue'
+import {provide, ref}  from 'vue'
 import ChatLink from '@/components/ChatLink.vue'
 import ChannelLink from '@/components/ChannelLink.vue'
 import MyProfile from '@/components/MyProfile.vue'
 import Settings from '@/components/Settings.vue'
+
+
+const text_200 = ref('')
+const text_300 = ref('')
+const dense = ref(false)
+const text_400 = ref('')
+
+const allOptions = ['ninja', 'pewdiepie', 'pokimane', 'shroud', 'xqc', 'gaming_sk']
+const options_fill = ref(allOptions)
+
+function filterFn (val, update) {
+  update(() => {
+    const needle = val.trim().toLowerCase()
+
+    if (needle === '') {
+      options_fill.value = []
+      return
+    }
+
+    options_fill.value = allOptions
+      .filter(v => v.toLowerCase().includes(needle))
+      .slice(0, 50)
+  })
+}
+
+function setModel (val) {
+  text_400.value = val.slice(0, 67)
+}
 const tab = ref('Direct Messages')
 const chatLinks = ref([
   {
@@ -179,6 +281,11 @@ function clearChannelUnread(channelName) {
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
 }
+const group = ref(null)
+const options = [
+  { label: 'Public', value: 'bat', color: 'positive'},
+  { label: 'Private', value: 'friend', color: 'negative' },
+]
 </script>
 
 <style scoped>
