@@ -70,7 +70,7 @@
             />
           </template>
         </q-input>
-        <q-btn color="primary" label="Save Changes" v-close-popup />
+        <q-btn color="positive" label="Save Changes" v-close-popup />
         <q-btn color="negative" label="Discard Changes" v-close-popup />
       </q-card-section>
     </q-card>

@@ -3,11 +3,16 @@
     <q-page-container>
       <q-page class="flex flex-center">
         <div class="auth-box">
-          <div class="text-h5 text-center q-mb-md">ZCHAT</div>
+          <div class="text-h5 text-center text-secondary q-mb-md">ZCHAT</div>
 
-          <q-tabs v-model="tab" align="justify" narrow-indicator class="q-mb-md">
-            <q-tab class="text-orange" name="Sign In" label="Sign In" />
-            <q-tab class="text-purple" name="Registration" label="Registration" />
+          <q-tabs
+            v-model="tab"
+            align="justify"
+            narrow-indicator
+            class="q-mb-md"
+          >
+            <q-tab class="text-accent" name="Sign In" label="Sign In" />
+            <q-tab class="text-info" name="Registration" label="Registration" />
           </q-tabs>
 
           <q-tab-panels

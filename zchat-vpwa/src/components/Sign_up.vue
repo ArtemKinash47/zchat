@@ -1,12 +1,12 @@
 <template>
-    <h1 class="reg-title">Sign In</h1>
+    <h1 class="reg-title text-accent">Sign In</h1>
     <q-form @submit.prevent="onSubmit">
       <q-input
         class="registration-input"
         clearable
         clear-icon="close"
         filled
-        color="primary"
+        color="accent"
         v-model="text"
         label="Nickname"
       />
@@ -14,6 +14,7 @@
         class="registration-input"
         v-model="password"
         filled
+        color="accent"
         :type="isPwd ? 'password' : 'text'"
         hint="Confirm Password"
       >
@@ -28,7 +29,7 @@
       <q-btn
         type="submit"
         class="reg-confirm-btn"
-        color="primary"
+        color="positive"
         label="Sign In"
       />
     </q-form>
@@ -38,7 +39,6 @@
 .reg-title {
   text-align: center;
   margin-bottom: 20px;
-  color: orange;
   font-size: 48px;
   font-weight: bold;
   font-family: 'Roboto', sans-serif;
