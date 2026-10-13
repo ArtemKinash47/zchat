@@ -86,7 +86,7 @@
     <MyProfile v-model="profileWindowOpen" />
 
     <q-dialog v-model="addChatOpen" backdrop-filter="blur(4px) saturate(150%)">
-      <q-card style="min-width: 750px; height: 500px">
+      <q-card class="add-chat-card">
         <q-tabs v-model="tab_addChat" class="text-teal">
           <q-tab label="Add Chat" name="one" />
           <q-tab label="Create Channel" name="two" />
@@ -95,6 +95,7 @@
         <q-tab-panels v-model="tab_addChat" animated>
           <q-tab-panel name="one">
             <q-input
+              class="add_chat"
               outlined
               v-model="text_200"
               bottom-slots
@@ -119,7 +120,7 @@
               </template>
 
               <template #after>
-                <q-btn round dense flat icon="send" @click="text_200 = ''" />
+                <q-btn v-close-popup round dense flat icon="send" @click="text_200 = ''" />
               </template>
             </q-input>
           </q-tab-panel>
@@ -134,7 +135,7 @@
             >
             </q-input>
             <div class="q-pa-md">
-              <q-option-group :options="options" type="radio" v-model="group" />
+              <q-option-group :options="options" type="radio" v-model="group" style="display: flex;" />
             </div>
             <q-select
               outlined
@@ -171,9 +172,50 @@
               </template>
 
               <template #after>
-                <q-btn v-if="text_400 !== ''" round dense flat icon="add" @click="text_400 = ''" />
+                <q-btn
+                  v-if="text_400.trim() !== ''"
+                  round
+                  dense
+                  flat
+                  icon="add"
+                  aria-label="Add channel member"
+                  @click="addChannelMember"
+                />
               </template>
+              
             </q-select>
+            <div class="channel-members q-pa-md">
+              <div
+                v-for="member in selectedChannelMembers"
+                :key="member.nickname"
+                class="selected-channel-member"
+              >
+                <q-avatar size="40px">
+                  <img :alt="`${member.nickname} avatar`" :src="member.avatar" />
+                  <q-tooltip anchor="bottom middle" self="top middle" :offset="[0, 8]">
+                    {{ member.nickname }}
+                  </q-tooltip>
+                </q-avatar>
+                <q-btn
+                  class="remove-channel-member"
+                  round
+                  dense
+                  size="xs"
+                  color="negative"
+                  icon="close"
+                  :aria-label="`Remove ${member.nickname}`"
+                  @click="removeChannelMember(member.nickname)"
+                />
+              </div>
+            </div>
+            <div class="row justify-end q-mt-md">
+              <q-btn
+                type="submit"
+                color="positive"
+                label="Create channel"
+                v-close-popup
+              />
+            </div>
           </q-tab-panel>
         </q-tab-panels>
       </q-card>
@@ -192,6 +234,7 @@ const text_200 = ref('')
 const text_300 = ref('')
 const dense = ref(false)
 const text_400 = ref('')
+const selectedChannelMembers = ref([])
 
 const allOptions = ['ninja', 'pewdiepie', 'pokimane', 'shroud', 'xqc', 'gaming_sk']
 const options_fill = ref(allOptions)
@@ -214,6 +257,28 @@ function filterFn (val, update) {
 function setModel (val) {
   text_400.value = val.slice(0, 67)
 }
+
+function addChannelMember () {
+  const nickname = text_400.value.trim()
+  if (!nickname) return
+
+  if (!selectedChannelMembers.value.some(member => member.nickname === nickname)) {
+    const avatarIndex = allOptions.indexOf(nickname) + 1
+    selectedChannelMembers.value.push({
+      nickname,
+      avatar: `https://cdn.quasar.dev/img/avatar${avatarIndex > 0 ? avatarIndex : 1}.jpg`,
+    })
+  }
+
+  text_400.value = ''
+}
+
+function removeChannelMember (nickname) {
+  selectedChannelMembers.value = selectedChannelMembers.value.filter(
+    member => member.nickname !== nickname,
+  )
+}
+
 const tab = ref('Direct Messages')
 const chatLinks = ref([
   {
@@ -294,4 +359,29 @@ const options = [
   align-items: center;
   gap: 15px;
 }
+.channel-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.selected-channel-member {
+  position: relative;
+}
+
+.remove-channel-member {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 1;
+}
+
+.add-chat-card {
+  width: 520px;
+  max-width: 92vw;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 20%);
+}
+
 </style>

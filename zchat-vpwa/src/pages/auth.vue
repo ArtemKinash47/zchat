@@ -3,8 +3,6 @@
     <q-page-container>
       <q-page class="flex flex-center">
         <div class="auth-box">
-          <div class="text-h5 text-center text-secondary q-mb-md">ZCHAT</div>
-
           <q-tabs
             v-model="tab"
             align="justify"
