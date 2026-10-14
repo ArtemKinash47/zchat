@@ -1,8 +1,12 @@
 <template>
-  <q-page class="conversation-page q-pa-md">
-    <div class="conversation-heading">
-      <div v-if="conversationTitle" class="title_conv text-h5">{{ conversationTitle }}</div>
-      <div v-else class="text-subtitle1 text-grey-7">Select a conversation</div>
+  <q-page class="conversation-page" :style-fn="pageStyleFn">
+    <div class="title_bar">
+      <q-bar class="bg-secondary text-white">
+        <div class="title_conv text-h5">
+          {{ conversationTitle || 'Select a conversation' }}
+        </div>
+          <q-btn class="justify-end bg-primary" round  icon="more_horiz" />
+      </q-bar>
     </div>
     <q-scroll-area ref="messagesScrollArea" class="messages-scroll-area">
       <div class="messages">
@@ -17,7 +21,7 @@
         />
       </div>
     </q-scroll-area>
-    <div class="message-composer">
+    <div class="typing-area">
       <div v-if="conversationTitle === 'Direct message with alexmorgan' && text.length > 0">
         <q-spinner-facebook color="secondary" />
         <span>You and Alex Morgan are typing...</span>
@@ -45,23 +49,23 @@
           @select="selectCommand"
         />
       </q-list>
-      <q-input
-        v-model="text"
-        outlined
-        class="message-composer"
-        label="Message"
-        placeholder="Type a message"
-        @update:model-value="onTextChanged"
-        @keydown.enter.exact.prevent="sendMessage"
-      >
-        <template #append>
-          <div class="composer-icons">
-            <q-icon name="send" />
-            <q-icon name="attach_file" />
-          </div>
-        </template>
-      </q-input>
     </div>
+    <q-input
+      v-model="text"
+      outlined
+      class="message-input"
+      label="Message"
+      placeholder="Type a message"
+      @update:model-value="onTextChanged"
+      @keydown.enter.exact.prevent="sendMessage"
+    >
+      <template #append>
+        <div class="composer-icons">
+          <q-icon name="send" />
+          <q-icon name="attach_file" />
+        </div>
+      </template>
+    </q-input>
   </q-page>
 </template>
 
@@ -395,21 +399,40 @@ const commandInfo = {
   '/cancel': 'Leave current channel / delete if admin',
   '/list': 'List all members of the chat/channel',
 }
+function pageStyleFn(offset) {
+  return { height: `calc(100dvh - ${offset}px)` }
+}
 </script>
 
 <style scoped>
+.title_bar .q-bar {
+  height: 3rem;
+  min-height: 3rem;
+}
+
+.title_conv {
+  flex: 1 1 0;
+  min-width: 0;           
+  overflow: hidden;
+  text-overflow: ellipsis; 
+  white-space: nowrap;
+}
 .conversation-page {
   display: flex;
   flex-direction: column;
-}
+  overflow: hidden;
+} 
 
 .messages-scroll-area {
   width: 100%;
-  height: min(75vh, 1200px);
+  flex: 1 1 0;
+  min-height: 0;
 }
 
-.message-composer {
-  margin-top: auto;
+.title_bar,
+.typing-area,
+.message-input {
+  flex: 0 0 auto;
 }
 
 .typing-indicator {

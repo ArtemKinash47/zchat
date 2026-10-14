@@ -25,8 +25,8 @@
           no-caps
           class="col-auto"
         >
-          <q-tab class="text-orange" name="Direct Messages" label="Direct Messages" />
-          <q-tab class="text-purple" name="Channels" label="Channels" />
+          <q-tab class="text-accent" name="Direct Messages" label="Direct Messages" />
+          <q-tab class="text-secondary" name="Channels" label="Channels" />
         </q-tabs>
 
         <q-separator />
@@ -87,7 +87,7 @@
 
     <q-dialog v-model="addChatOpen" backdrop-filter="blur(4px) saturate(150%)">
       <q-card class="add-chat-card">
-        <q-tabs v-model="tab_addChat" class="text-teal">
+        <q-tabs v-model="tab_addChat" class="text-accent">
           <q-tab label="Add Chat" name="one" />
           <q-tab label="Create Channel" name="two" />
         </q-tabs>
