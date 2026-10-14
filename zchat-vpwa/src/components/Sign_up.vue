@@ -29,7 +29,8 @@
       <q-btn
         type="submit"
         class="reg-confirm-btn"
-        color="positive"
+        color="primary"
+        text-color="white"
         label="Sign In"
       />
     </q-form>

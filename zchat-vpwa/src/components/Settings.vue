@@ -27,7 +27,7 @@ import { useAuth } from '@/stores/auth'
 
 const router = useRouter()
 const { logout } = useAuth()
-const lightMode = ref(true)
+const lightMode = ref(false)
 
 function onItemClick() {
   logout()

@@ -68,8 +68,8 @@
         <div class="q-pa-md">
           <q-btn
             push
-            color="positive"
-            text-color="secondary"
+            color="primary"
+            text-color="white"
             label="Add Chat"
             class="full-width"
             no-caps

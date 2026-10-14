@@ -18,6 +18,8 @@
           :text="[message.text]"
           :stamp="message.time"
           :sent="message.sender === 'You'"
+          :bg-color="message.sender === 'You' ? 'secondary' : 'primary'"
+          text-color="white"
         />
       </div>
     </q-scroll-area>
@@ -71,9 +73,11 @@
 
 <script setup>
 import { computed, inject, nextTick, ref, watch } from 'vue'
+import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
 import Commands from './Commands.vue'
 
+const $q = useQuasar()
 const route = useRoute()
 const text = ref('')
 const commandSelected = ref(false)
@@ -385,6 +389,14 @@ function sendMessage() {
     avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
   }
   messagesByConversation.value[key] = [...(messagesByConversation.value[key] ?? []), msg]
+  if (route.query.channel === 'Infinity Chat') {
+    $q.notify({
+      icon: 'notifications',
+      message: `${msg.sender} have sent: ${messageText}`,
+      color: 'primary',
+      textColor: 'white',
+    })
+  }
   text.value = ''
 }
 
@@ -421,7 +433,7 @@ function pageStyleFn(offset) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-} 
+}
 
 .messages-scroll-area {
   width: 100%;
@@ -429,10 +441,19 @@ function pageStyleFn(offset) {
   min-height: 0;
 }
 
+.messages {
+  padding-inline: 16px;
+  margin-top: 12px;
+}
+
 .title_bar,
-.typing-area,
+.typing-area {
+  flex: 0 0 auto;
+}
+
 .message-input {
   flex: 0 0 auto;
+  margin: 0 16px 12px;
 }
 
 .typing-indicator {

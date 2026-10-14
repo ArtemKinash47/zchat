@@ -67,7 +67,8 @@
       <q-btn
         type="submit"
         class="reg-confirm-btn"
-        color="positive"
+        color="primary"
+        text-color="white"
         label="Register"
       />
     </q-form>
