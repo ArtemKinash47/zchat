@@ -5,7 +5,7 @@
         <div class="title_conv text-h5">
           {{ conversationTitle || 'Select a conversation' }}
         </div>
-          <q-btn class="justify-end bg-primary" round  icon="more_horiz" />
+          <q-btn class="justify-end bg-primary" round  icon="more_horiz" @click="ChatInfoOpen = true"/>
       </q-bar>
     </div>
     <q-scroll-area ref="messagesScrollArea" class="messages-scroll-area">
@@ -18,8 +18,8 @@
           :text="[message.text]"
           :stamp="message.time"
           :sent="message.sender === 'You'"
-          :bg-color="message.sender === 'You' ? 'secondary' : 'primary'"
-          text-color="white"
+          :bg-color="message.sender === 'You' ? 'secondary' : message.sender === 'ZCHAT SYSTEM' ? 'info' : 'primary'"
+          :text-color=" message.sender === 'ZCHAT SYSTEM' ? 'warning' : 'white'"
         />
       </div>
     </q-scroll-area>
@@ -63,12 +63,12 @@
     >
       <template #append>
         <div class="composer-icons">
-          <q-icon name="send" />
-          <q-icon name="attach_file" />
+          <q-btn icon="send" flat @click="sendMessage"/>
         </div>
       </template>
     </q-input>
   </q-page>
+  <ChatInfo v-model="ChatInfoOpen"/>
 </template>
 
 <script setup>
@@ -76,6 +76,7 @@ import { computed, inject, nextTick, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
 import Commands from './Commands.vue'
+import ChatInfo from './ChatInfo.vue'
 
 const $q = useQuasar()
 const route = useRoute()
@@ -83,10 +84,17 @@ const text = ref('')
 const commandSelected = ref(false)
 const channelLinks = inject('channelLinks', ref([]))
 const messagesScrollArea = ref(null)
+const ChatInfoOpen = ref(false)
 
 function scrollMessagesToBottom() {
   nextTick(() => {
-    messagesScrollArea.value?.setScrollPercentage('vertical', 1, 300)
+    requestAnimationFrame(() => {
+      const scrollArea = messagesScrollArea.value
+      const scrollTarget = scrollArea?.getScrollTarget()
+      if (scrollTarget) {
+        scrollArea.setScrollPosition('vertical', scrollTarget.scrollHeight)
+      }
+    })
   })
 }
 
@@ -392,6 +400,7 @@ function sendMessage() {
   if (route.query.channel === 'Infinity Chat') {
     $q.notify({
       icon: 'notifications',
+      position: 'bottom-right',
       message: `${msg.sender} have sent: ${messageText}`,
       color: 'primary',
       textColor: 'white',
