@@ -7,7 +7,7 @@
         <q-space />
         <div class="nav_btns">
           <q-btn round flat aria-label="Open profile" @click="profileWindowOpen = true">
-            <q-avatar color="white" text-color="primary">
+            <q-avatar class="profile-avatar" color="white" text-color="primary">
               <img src="https://cdn.quasar.dev/img/avatar4.jpg" />
             </q-avatar>
           </q-btn>
@@ -357,7 +357,12 @@ const options = [
 .nav_btns {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 2px;
+}
+
+:deep(.profile-avatar) {
+  width: clamp(32px, 8vw, 40px);
+  height: clamp(32px, 8vw, 40px);
 }
 .channel-members {
   display: flex;
