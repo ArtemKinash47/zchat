@@ -35,4 +35,9 @@
   padding-left: 8px;
   border-bottom: 1px solid var(--q-primary);
 }
+
+.command-item :deep(.q-item__section) {
+min-width: 0;
+overflow-wrap: anywhere;
+}
 </style>

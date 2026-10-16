@@ -6,9 +6,10 @@
           <q-item class="settings-item">
             <div class="q-pa-lg">
               <q-toggle
-                v-model="lightMode"
+                :model-value="Dark.isActive"
                 color="secondary"
-                :label="lightMode ? 'Dark Mode' : 'Light Mode'"
+                :label="Dark.isActive ? 'Dark Mode' : 'Light Mode'"
+                @update:model-value="Dark.set"
               />
             </div>
           </q-item>
@@ -49,15 +50,18 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 
+import { Dark } from 'quasar'
+
+
 const router = useRouter()
 const group = ref('onl')
 const { logout } = useAuth()
-const lightMode = ref(false)
 const direct = ref(false)
 function onItemClick() {
   logout()
   router.push('/auth')
 }
+
 
 const options = [
   { label: 'Online', value: 'onl', color: 'positive'},

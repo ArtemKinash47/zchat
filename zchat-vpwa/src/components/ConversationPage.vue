@@ -9,33 +9,58 @@
       </q-bar>
     </div>
     <q-scroll-area ref="messagesScrollArea" class="messages-scroll-area">
-      <div class="messages">
-        <q-chat-message
-          v-for="message in msgs"
-          :key="message.id"
-          :avatar="message.avatar"
-          :name="message.sender"
-          :text="[message.text]"
-          :stamp="message.time"
-          :sent="message.sender === 'You'"
-          :bg-color="message.sender === 'You' ? 'secondary' : message.sender === 'ZCHAT SYSTEM' ? 'info' : 'primary'"
-          :text-color=" message.sender === 'ZCHAT SYSTEM' ? 'warning' : 'white'"
-        />
-      </div>
-    </q-scroll-area>
+      <q-infinite-scroll
+        ref="messageHistory"
+        reverse
+        :scroll-target="messagesScrollArea"
+        @load="onLoad"
+      >
+        <template #loading>
+          <div class="row justify-center q-my-md">
+            <q-spinner-pie color="primary" size="40px" />
+          </div>
+        </template>
+        <div class="messages">
+          <q-chat-message
+            v-for="message in msgs"
+            :key="message.id"
+            :avatar="message.avatar"
+            :name="message.sender"
+            :stamp="message.time"
+            :sent="message.sender === 'You'"
+            :bg-color="message.sender === 'You' ? 'secondary' : message.sender === 'ZCHAT SYSTEM' ? 'info' : 'primary'"
+            :text-color=" message.sender === 'ZCHAT SYSTEM' ? 'warning' : 'white'"
+          >
+          <template #default>
+            <span>
+              <span
+              v-for="(part, index) in messageParts(message.text)"
+              :key="index"
+              :class="{ 'chat-mention': part.isMention }"
+              >{{ part.text }}
+              </span>
+            </span> 
+          </template>
+          </q-chat-message>
+        </div>
+      </q-infinite-scroll>
+      </q-scroll-area>
     <div class="typing-area">
-      <div v-if="conversationTitle === 'Direct message with alexmorgan' && text.length > 0">
+      <div
+        v-if="conversationTitle === 'Direct message with alexmorgan' && text.length > 0"
+        class="typing-status"
+      >
         <q-spinner-facebook color="secondary" />
         <span>You and Alex Morgan are typing...</span>
       </div>
       <div
         v-else-if="text.length === 0 && conversationTitle === 'Direct message with alexmorgan'"
-        class="typing-indicator"
+        class="typing-indicator typing-status"
       >
         <q-spinner-facebook color="secondary" />
         <span>Alex Morgan is typing...</span>
       </div>
-      <div v-else-if="text.length > 0">
+      <div v-else-if="text.length > 0" class="typing-status">
         <q-spinner-facebook color="secondary" />
         <span>You are typing...</span>
       </div>
@@ -57,6 +82,7 @@
       outlined
       class="message-input"
       label="Message"
+      color="accent"
       placeholder="Type a message"
       @update:model-value="onTextChanged"
       @keydown.enter.exact.prevent="sendMessage"
@@ -77,6 +103,8 @@ import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
 import Commands from './Commands.vue'
 import ChatInfo from './ChatInfo.vue'
+import lebronAvatar from '@/assets/lebron.png'
+import denAvatar from '@/assets/den.jpg'
 
 const $q = useQuasar()
 const route = useRoute()
@@ -84,7 +112,9 @@ const text = ref('')
 const commandSelected = ref(false)
 const channelLinks = inject('channelLinks', ref([]))
 const messagesScrollArea = ref(null)
+const messageHistory = ref(null)
 const ChatInfoOpen = ref(false)
+const visibleMessageCount = ref(10)
 
 function scrollMessagesToBottom() {
   nextTick(() => {
@@ -176,7 +206,7 @@ const messagesByConversation = ref({
       text: 'Are we still meeting today?',
       time: '10:02',
       avatar:
-        'https://img.redbull.com/images/c_crop,x_914,y_1637,h_3171,w_3171/c_fill,g_auto,w_308,h_308/q_auto:low,f_auto/redbullcom/2022/5/5/esxtfazwc5k0xntwv20i/max-verstappen-profile-pic',
+        denAvatar,
     },
     {
       id: 7,
@@ -191,7 +221,7 @@ const messagesByConversation = ref({
       text: 'Great, I will bring the notes.',
       time: '10:05',
       avatar:
-        'https://img.redbull.com/images/c_crop,x_914,y_1637,h_3171,w_3171/c_fill,g_auto,w_308,h_308/q_auto:low,f_auto/redbullcom/2022/5/5/esxtfazwc5k0xntwv20i/max-verstappen-profile-pic',
+        denAvatar,
     },
     {
       id: 9,
@@ -206,7 +236,7 @@ const messagesByConversation = ref({
       text: 'See you!',
       time: '10:07',
       avatar:
-        'https://img.redbull.com/images/c_crop,x_914,y_1637,h_3171,w_3171/c_fill,g_auto,w_308,h_308/q_auto:low,f_auto/redbullcom/2022/5/5/esxtfazwc5k0xntwv20i/max-verstappen-profile-pic',
+        denAvatar,
     },
   ],
   'direct:Leybron Jahames': [
@@ -215,7 +245,7 @@ const messagesByConversation = ref({
       sender: 'Leybron Jahames',
       text: 'I pushed the latest changes.',
       time: '11:30',
-      avatar: 'https://cdn.nba.com/headshots/nba/latest/1040x760/2544.png',
+      avatar: lebronAvatar,
     },
     {
       id: 12,
@@ -229,7 +259,7 @@ const messagesByConversation = ref({
       sender: 'Leybron Jahames',
       text: 'The tests are passing now.',
       time: '11:33',
-      avatar: 'https://cdn.nba.com/headshots/nba/latest/1040x760/2544.png',
+      avatar: lebronAvatar,
     },
     {
       id: 14,
@@ -243,7 +273,7 @@ const messagesByConversation = ref({
       sender: 'Leybron Jahames',
       text: 'Let me know if anything needs fixing.',
       time: '11:36',
-      avatar: 'https://cdn.nba.com/headshots/nba/latest/1040x760/2544.png',
+      avatar: lebronAvatar,
     },
   ],
   'channel:Design Team': [
@@ -267,7 +297,7 @@ const messagesByConversation = ref({
       text: 'I agree. The layout feels clearer.',
       time: '13:14',
       avatar:
-        'https://img.redbull.com/images/c_crop,x_914,y_1637,h_3171,w_3171/c_fill,g_auto,w_308,h_308/q_auto:low,f_auto/redbullcom/2022/5/5/esxtfazwc5k0xntwv20i/max-verstappen-profile-pic',
+        denAvatar,
     },
     {
       id: 19,
@@ -289,7 +319,7 @@ const messagesByConversation = ref({
       text: 'TU TU TUTU!',
       time: '13:14',
       avatar:
-        'https://img.redbull.com/images/c_crop,x_914,y_1637,h_3171,w_3171/c_fill,g_auto,w_308,h_308/q_auto:low,f_auto/redbullcom/2022/5/5/esxtfazwc5k0xntwv20i/max-verstappen-profile-pic',
+        denAvatar,
     },
     {
       id: 29,
@@ -297,7 +327,7 @@ const messagesByConversation = ref({
       text: 'DEN VERSTAPPEN!',
       time: '13:14',
       avatar:
-        'https://img.redbull.com/images/c_crop,x_914,y_1637,h_3171,w_3171/c_fill,g_auto,w_308,h_308/q_auto:low,f_auto/redbullcom/2022/5/5/esxtfazwc5k0xntwv20i/max-verstappen-profile-pic',
+        denAvatar,
     },
   ],
   'channel:Infinity Chat': [
@@ -306,7 +336,7 @@ const messagesByConversation = ref({
       sender: 'Leybron Jahames',
       text: 'Welcome to the project chat.',
       time: '14:00',
-      avatar: 'https://cdn.nba.com/headshots/nba/latest/1040x760/2544.png',
+      avatar: lebronAvatar,
     },
     {
       id: 22,
@@ -320,7 +350,7 @@ const messagesByConversation = ref({
       sender: 'Leybron Jahames',
       text: 'We use this channel for general updates.',
       time: '14:03',
-      avatar: 'https://cdn.nba.com/headshots/nba/latest/1040x760/2544.png',
+      avatar: lebronAvatar,
     },
     {
       id: 24,
@@ -334,7 +364,152 @@ const messagesByConversation = ref({
       sender: 'Leybron Jahames',
       text: 'Feel free to ask any questions.',
       time: '14:05',
-      avatar: 'https://cdn.nba.com/headshots/nba/latest/1040x760/2544.png',
+      avatar: lebronAvatar,
+    },
+    {
+      id: 30,
+      sender: 'Alex Morgan',
+      text: 'What is everyone working on today?',
+      time: '14:06',
+      avatar: 'https://cdn.quasar.dev/img/avatar.png',
+    },
+    {
+      id: 31,
+      sender: 'You',
+      text: 'I am checking the chat layout on mobile.',
+      time: '14:07',
+      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
+    },
+    {
+      id: 32,
+      sender: 'Leybron Jahames',
+      text: 'I will review the latest changes after lunch.',
+      time: '14:08',
+      avatar: lebronAvatar,
+    },
+    {
+      id: 33,
+      sender: 'Den Verstappen',
+      text: 'I can test it on my phone too.',
+      time: '14:09',
+      avatar:
+        denAvatar,
+    },
+    {
+      id: 34,
+      sender: 'Alex Morgan',
+      text: 'That would be helpful, thanks!',
+      time: '14:10',
+      avatar: 'https://cdn.quasar.dev/img/avatar.png',
+    },
+    {
+      id: 35,
+      sender: 'You',
+      text: 'The input and command list should now fit smaller screens better.',
+      time: '14:12',
+      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
+    },
+    {
+      id: 36,
+      sender: 'Leybron Jahames',
+      text: 'Looks good from here. The spacing feels much cleaner.',
+      time: '14:14',
+      avatar: lebronAvatar,
+    },
+    {
+      id: 37,
+      sender: 'Den Verstappen',
+      text: 'I checked the phone view. Everything is readable.',
+      time: '14:16',
+      avatar:
+        denAvatar,
+    },
+    {
+      id: 38,
+      sender: 'Alex Morgan',
+      text: 'Can we also try the mention suggestions?',
+      time: '14:18',
+      avatar: 'https://cdn.quasar.dev/img/avatar.png',
+    },
+    {
+      id: 39,
+      sender: 'You',
+      text: 'Sure, I will test typing @alex in the middle of a message.',
+      time: '14:19',
+      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
+    },
+    {
+      id: 40,
+      sender: 'Leybron Jahames',
+      text: 'It should show matching accounts as soon as you type.',
+      time: '14:21',
+      avatar: lebronAvatar,
+    },
+    {
+      id: 41,
+      sender: 'Den Verstappen',
+      text: 'I will try a few different usernames.',
+      time: '14:23',
+      avatar:
+        denAvatar,
+    },
+    {
+      id: 42,
+      sender: 'Alex Morgan',
+      text: 'The channel history is looking more realistic now.',
+      time: '14:25',
+      avatar: 'https://cdn.quasar.dev/img/avatar.png',
+    },
+    {
+      id: 43,
+      sender: 'You',
+      text: 'I added some sample messages so we can check scrolling too.',
+      time: '14:26',
+      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
+    },
+    {
+      id: 44,
+      sender: 'Leybron Jahames',
+      text: 'Great. @your_nickname I will scroll back and check that older messages stay accessible.',
+      time: '14:27',
+      avatar: lebronAvatar,
+    },
+    {
+      id: 45,
+      sender: 'Den Verstappen',
+      text: 'Scrolling works smoothly on mobile.',
+      time: '14:28',
+      avatar:
+        denAvatar,
+    },
+    {
+      id: 46,
+      sender: 'Alex Morgan',
+      text: 'Nice work, everyone. Let us keep sharing updates here.',
+      time: '14:29',
+      avatar: 'https://cdn.quasar.dev/img/avatar.png',
+    },
+    {
+      id: 47,
+      sender: 'You',
+      text: 'Sounds good! I will post again after the next round of testing.',
+      time: '14:30',
+      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
+    },
+    {
+      id: 48,
+      sender: 'Leybron Jahames',
+      text: 'Thanks for the update.',
+      time: '14:31',
+      avatar: lebronAvatar,
+    },
+    {
+      id: 49,
+      sender: 'Den Verstappen',
+      text: 'All good on my side too!',
+      time: '14:32',
+      avatar:
+        denAvatar,
     },
   ],
 })
@@ -349,16 +524,27 @@ const activeConversationKey = computed(() => {
   return null
 })
 
-const msgs = computed(() => {
+const allMsgs = computed(() => {
   const key = activeConversationKey.value
   return key ? (messagesByConversation.value[key] ?? []) : []
 })
 
-watch(() => [activeConversationKey.value, msgs.value.length], scrollMessagesToBottom, {
+const msgs = computed(() => allMsgs.value.slice(-visibleMessageCount.value))
+
+watch(activeConversationKey, () => {
+  visibleMessageCount.value = 10
+  nextTick(() => {
+    messageHistory.value?.reset()
+    messageHistory.value?.resume()
+    scrollMessagesToBottom()
+  })
+})
+
+watch(() => allMsgs.value.length, scrollMessagesToBottom, {
   flush: 'post',
 })
 
-let nextMsgId = 30
+let nextMsgId = 50
 
 function sendMessage() {
   const key = activeConversationKey.value
@@ -423,12 +609,48 @@ const commandInfo = {
 function pageStyleFn(offset) {
   return { height: `calc(100dvh - ${offset}px)` }
 }
+
+const knownNicknames = new Set(['alexmorgan', 'your_nickname'])
+
+function messageParts(message) {
+  return message
+    .split(/(@[A-Za-z0-9_]+)/g)
+    .filter(Boolean)
+    .map((text) => ({
+      text,
+      isMention:
+        text.startsWith('@') &&
+        knownNicknames.has(text.slice(1).toLowerCase()),
+    }))
+}
+
+function onLoad(_index, done) {
+  setTimeout(() => {
+    const totalMessages = allMsgs.value.length
+
+    if (visibleMessageCount.value >= totalMessages) {
+      done(true)
+      return
+    }
+
+    visibleMessageCount.value = Math.min(visibleMessageCount.value + 10, totalMessages)
+    nextTick(() => {
+      done(visibleMessageCount.value >= allMsgs.value.length)
+    })
+  }, 2000)
+}
+
 </script>
 
 <style scoped>
 .title_bar .q-bar {
   height: 3rem;
   min-height: 3rem;
+}
+
+.chat-mention {
+  color: #ffeb3b;
+  font-weight: 700;
 }
 
 .title_conv {
@@ -468,14 +690,21 @@ function pageStyleFn(offset) {
 .typing-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.typing-status {
+  margin-inline: 16px;
 }
 
 .command-list {
   border: 1px solid var(--q-primary);
   border-radius: 4px;
-  overflow: hidden;
-  margin-left: 6px;
+  box-sizing: border-box;
+  max-height: 35dvh;
+  margin: 0 16px 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .composer-icons {
@@ -487,6 +716,15 @@ function pageStyleFn(offset) {
 @media (max-width: 599px) {
   .title_conv {
     font-size: 1.2rem;
+  }
+
+  .command-list {
+    max-height: 30dvh;
+    margin-inline: 10px;
+  }
+
+  .typing-status {
+    margin-inline: 10px;
   }
 }
 </style>

@@ -20,7 +20,9 @@
     </q-item-section>
 
     <q-item-section>
-      <q-item-label>{{ props.name}}</q-item-label>
+      <q-item-label :class="{ 'text-accent': Dark.isActive }">
+        {{ props.name }}
+      </q-item-label>
       <q-item-label v-if="props.hasNickname" caption class="text-grey-7">
         {{ props.nickname || props.caption }}
       </q-item-label>
@@ -37,6 +39,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import {Dark} from 'quasar'
 const emit = defineEmits(['clear-unread'])
 const statusColor = computed(() => {
   if (props.isOnline === 1) return 'positive'

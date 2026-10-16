@@ -26,7 +26,9 @@
       </div>
     </q-item-section>
     <q-item-section>
-      <q-item-label>{{ props.name}}</q-item-label>
+      <q-item-label :class="{ 'text-accent': Dark.isActive }">
+        {{ props.name }}
+      </q-item-label>
       <q-item-label v-if="props.caption" caption class="text-grey-7">
         {{ props.caption }}
       </q-item-label>
@@ -59,6 +61,7 @@
 }
 </style>
 <script setup>
+import { Dark } from 'quasar'
 const emit = defineEmits(['clear-unread-channel'])
 
 const props = defineProps({

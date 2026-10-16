@@ -25,8 +25,8 @@
           no-caps
           class="col-auto"
         >
-          <q-tab class="text-accent" name="Direct Messages" label="Direct Messages" />
-          <q-tab class="text-secondary" name="Channels" label="Channels" />
+          <q-tab :class="Dark.isActive ? 'text-accent' : 'text-accent'" name="Direct Messages" label="Direct Messages" />
+          <q-tab :class="Dark.isActive ? 'text-warning' : 'text-secondary'" name="Channels" label="Channels" />
         </q-tabs>
 
         <q-separator />
@@ -224,10 +224,13 @@
 </template>
 <script setup>
 import {provide, ref}  from 'vue'
+import {Dark} from 'quasar'
 import ChatLink from '@/components/ChatLink.vue'
 import ChannelLink from '@/components/ChannelLink.vue'
 import MyProfile from '@/components/MyProfile.vue'
 import Settings from '@/components/Settings.vue'
+import lebronAvatar from '@/assets/lebron.png'
+import denAvatar from '@/assets/den.jpg'
 
 
 const text_200 = ref('')
@@ -292,14 +295,14 @@ const chatLinks = ref([
   {
     name: 'Den Verstappen',
     nickname: '',
-    avatar: 'https://img.redbull.com/images/c_crop,x_914,y_1637,h_3171,w_3171/c_fill,g_auto,w_308,h_308/q_auto:low,f_auto/redbullcom/2022/5/5/esxtfazwc5k0xntwv20i/max-verstappen-profile-pic',
+    avatar: denAvatar,
     isOnline: -1,
     unreadCount: 0,
   },
   {
     name: 'Leybron Jahames',
     nickname: '',
-    avatar: 'https://cdn.nba.com/headshots/nba/latest/1040x760/2544.png',
+    avatar: lebronAvatar,
     isOnline: 0,
     unreadCount: 0,
   },

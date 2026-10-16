@@ -1,5 +1,4 @@
 <template>
-    <img :src="zchatLogo" class="registration-logo" alt="Zchat logo" />
     <h1 class="reg-title text-info">Registration</h1>
     <q-form @submit.prevent="onSubmit">
       <q-input
@@ -104,7 +103,6 @@
 </style>
 <script setup>
 import { ref } from 'vue'
-import zchatLogo from '@/assets/zchat.png'
 
 const emit = defineEmits(['submit'])
 const name = ref('')
