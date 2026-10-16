@@ -94,7 +94,14 @@
       </template>
     </q-input>
   </q-page>
-  <ChatInfo v-model="ChatInfoOpen"/>
+  <ChatInfo
+    v-model="ChatInfoOpen"
+    v-model:is-private="channelIsPrivate"
+    :chat-type="channelType"
+    :chat-name="chatName"
+    :participants="channelParticipants"
+    @add-member="addChannelMember"
+  />
 </template>
 
 <script setup>
@@ -146,6 +153,72 @@ const conversationTitle = computed(() => {
 
   return `Direct message with ${name}`
 })
+const chatName = computed(() => {
+  const channel = route.query.channel
+  if (typeof channel === 'string' && channel) return channel
+
+  const name = route.query.name
+  return typeof name === 'string' ? name : ''
+})
+const channelType = computed(() => {
+  const channelType = route.query.channel
+  if (typeof channelType === 'string' && channelType) return 2
+
+  const nameType = route.query.name
+  if (typeof nameType === 'string' && nameType) return 1
+
+  return null
+})
+
+const channelParticipants = computed(() => {
+  const channelName = route.query.channel
+  if (typeof channelName !== 'string' || !channelName) return []
+
+  const channel = channelLinks.value.find(({ name }) => name === channelName)
+  return (channel?.usersList ?? []).map((member, index) =>
+    typeof member === 'string' ? { id: index, name: member } : { id: index, ...member },
+  )
+})
+
+const channelIsPrivate = computed({
+  get() {
+    const channelName = route.query.channel
+    if (typeof channelName !== 'string' || !channelName) return false
+
+    return channelLinks.value.find(({ name }) => name === channelName)?.isPrivate ?? false
+  },
+  set(isPrivate) {
+    const channelName = route.query.channel
+    if (typeof channelName !== 'string' || !channelName) return
+
+    const channel = channelLinks.value.find(({ name }) => name === channelName)
+    if (channel) channel.isPrivate = isPrivate
+  },
+})
+
+function addChannelMember(name) {
+  const channelName = route.query.channel
+  if (typeof channelName !== 'string' || !channelName) return
+
+  const channel = channelLinks.value.find(({ name }) => name === channelName)
+  if (!channel) return
+
+  const normalizedName = name.trim().toLowerCase()
+  const alreadyMember = (channel.usersList ?? []).some((member) => {
+    const memberName = typeof member === 'string' ? member : member.name
+    return memberName.trim().toLowerCase() === normalizedName
+  })
+  if (alreadyMember) {
+    $q.notify({
+      type: 'warning',
+      message: `${name} is already a channel member.`,
+    })
+    return
+  }
+
+  channel.usersList ??= []
+  channel.usersList.push({ name: name.trim(), isOnline: 0, admin: false })
+}
 
 const messagesByConversation = ref({
   'direct:alexmorgan': [
@@ -558,7 +631,9 @@ function sendMessage() {
     const directName = route.query.name
     const channel = channelLinks.value.find(({ name }) => name === channelName)
     const members = channelName
-      ? (channel?.usersList ?? [])
+      ? (channel?.usersList ?? []).map((member) =>
+          typeof member === 'string' ? member : member.name,
+        )
       : ['You', typeof directName === 'string' ? directName : '']
     const membersText = members.join(', ')
 
