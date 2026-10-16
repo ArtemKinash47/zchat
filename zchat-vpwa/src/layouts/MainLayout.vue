@@ -42,7 +42,7 @@
             <q-tab-panel name="Direct Messages" class="q-pa-none">
               <q-list>
                 <ChatLink
-                  v-for="chat in chatLinks"
+                  v-for="chat in sortedChatLinks"
                   :key="chat.name"
                   v-bind="chat"
                   @clear-unread="clearChatUnread"
@@ -53,7 +53,7 @@
             <q-tab-panel name="Channels" class="q-pa-none">
               <q-list>
                 <ChannelLink
-                  v-for="channel in channelLinks"
+                  v-for="channel in sortedChannelLinks"
                   :key="channel.name"
                   v-bind="channel"
                   @clear-unread-channel="clearChannelUnread"
@@ -94,12 +94,19 @@
         <q-separator />
         <q-tab-panels v-model="tab_addChat" animated>
           <q-tab-panel name="one">
-            <q-input
+            <q-select
               class="add_chat"
-              outlined
               v-model="text_200"
+              outlined
+              use-input
+              hide-selected
+              fill-input
+              hide-dropdown-icon
               bottom-slots
-              label="Enter nickname or channel name"
+              :options="options_fill"
+              @filter="filterFn"
+              @input-value="setChatInput"
+              label="Enter nickname"
               stack-label
               maxlength="67"
               :dense="dense"
@@ -120,9 +127,17 @@
               </template>
 
               <template #after>
-                <q-btn v-close-popup round dense flat icon="send" @click="text_200 = ''" />
+                <q-btn
+                  round
+                  dense
+                  flat
+                  icon="send"
+                  aria-label="Add chat"
+                  :disable="!text_200.trim()"
+                  @click="addChat"
+                />
               </template>
-            </q-input>
+            </q-select>
           </q-tab-panel>
           <q-tab-panel name="two">
            <q-input
@@ -184,36 +199,38 @@
               </template>
               
             </q-select>
-            <div class="channel-members q-pa-md">
-              <div
-                v-for="member in selectedChannelMembers"
-                :key="member.nickname"
-                class="selected-channel-member"
-              >
-                <q-avatar size="40px">
-                  <img :alt="`${member.nickname} avatar`" :src="member.avatar" />
-                  <q-tooltip anchor="bottom middle" self="top middle" :offset="[0, 8]">
-                    {{ member.nickname }}
-                  </q-tooltip>
-                </q-avatar>
-                <q-btn
-                  class="remove-channel-member"
-                  round
-                  dense
-                  size="xs"
-                  color="negative"
-                  icon="close"
-                  :aria-label="`Remove ${member.nickname}`"
-                  @click="removeChannelMember(member.nickname)"
-                />
-              </div>
+            <div class="channel-members-scroll q-pa-md">
+                <div class="channel-members">
+                  <div
+                    v-for="member in selectedChannelMembers"
+                    :key="member.nickname"
+                    class="selected-channel-member"
+                  >
+                    <q-avatar size="40px">
+                      <img :alt="`${member.nickname} avatar`" :src="member.avatar" />
+                      <q-tooltip anchor="bottom middle" self="top middle" :offset="[0, 8]">
+                        {{ member.nickname }}
+                      </q-tooltip>
+                    </q-avatar>
+                    <q-btn
+                      class="remove-channel-member"
+                      round
+                      dense
+                      size="xs"
+                      color="negative"
+                      icon="close"
+                      :aria-label="`Remove ${member.nickname}`"
+                      @click="removeChannelMember(member.nickname)"
+                    />
+                  </div>
+                </div>
             </div>
             <div class="row justify-end q-mt-md">
               <q-btn
-                type="submit"
                 color="positive"
                 label="Create channel"
-                v-close-popup
+                :disable="!text_300.trim()"
+                @click="createChannel"
               />
             </div>
           </q-tab-panel>
@@ -223,13 +240,14 @@
   </q-layout>
 </template>
 <script setup>
-import {provide, ref}  from 'vue'
+import { computed, provide, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import ChatLink from '@/components/ChatLink.vue'
 import ChannelLink from '@/components/ChannelLink.vue'
 import MyProfile from '@/components/MyProfile.vue'
 import Settings from '@/components/Settings.vue'
 
-
+const router = useRouter()
 const text_200 = ref('')
 const text_300 = ref('')
 const dense = ref(false)
@@ -258,6 +276,10 @@ function setModel (val) {
   text_400.value = val.slice(0, 67)
 }
 
+function setChatInput(val) {
+  text_200.value = val.slice(0, 67)
+}
+
 function addChannelMember () {
   const nickname = text_400.value.trim()
   if (!nickname) return
@@ -279,31 +301,110 @@ function removeChannelMember (nickname) {
   )
 }
 
+function addChat() {
+  const nickname = text_200.value.trim().replace(/^@/, '')
+  if (!nickname) return
+
+  const routeName = nickname.toLowerCase()
+  const existingChat = chatLinks.value.find(({ name, hasNickname, nickname: savedNickname }) => {
+    const existingRouteName = hasNickname
+      ? (savedNickname || name).trim().replace(/^@/, '')
+      : name.trim()
+    return existingRouteName.toLowerCase() === routeName
+  })
+  const chat = existingChat ?? {
+    name: nickname,
+    hasNickname: true,
+    nickname: `@${nickname}`,
+    avatar: `https://cdn.quasar.dev/img/avatar${(allOptions.indexOf(nickname) % 6) + 1}.jpg`,
+    isOnline: 0,
+    unreadCount: 0,
+    new: true,
+  }
+
+  if (!existingChat) chatLinks.value.push(chat)
+
+  tab.value = 'Direct Messages'
+  addChatOpen.value = false
+  text_200.value = ''
+  router.push({ path: '/', query: { name: routeName } })
+}
+
+function createChannel() {
+  const name = text_300.value.trim()
+  if (!name) return
+
+  const routeName = name.toLowerCase()
+  const existingChannel = channelLinks.value.find(
+    (channel) => channel.name.trim().toLowerCase() === routeName,
+  )
+  if (existingChannel) {
+    tab.value = 'Channels'
+    addChatOpen.value = false
+    router.push({ path: '/', query: { channel: existingChannel.name } })
+    return
+  }
+
+  const usersList = [
+    { name: 'You', isOnline: 1, admin: true },
+    ...selectedChannelMembers.value.map(({ nickname }) => ({
+      name: nickname,
+      isOnline: 0,
+      admin: false,
+    })),
+  ]
+  channelLinks.value.push({
+    name,
+    isPrivate: group.value === 'private',
+    unreadCount: 0,
+    onlineCount: 1,
+    new: true,
+    usersList,
+  })
+
+  tab.value = 'Channels'
+  addChatOpen.value = false
+  text_300.value = ''
+  text_400.value = ''
+  selectedChannelMembers.value = []
+  group.value = 'public'
+  router.push({ path: '/', query: { channel: name } })
+}
+
 const tab = ref('Direct Messages')
 const chatLinks = ref([
   {
     name: 'Alex Morgan',
     hasNickname: true,
-    nickname: '@alexmorgan',
+    nickname: 'alexmorgan',
     avatar: 'https://cdn.quasar.dev/img/avatar.png',
     isOnline: 1,
     unreadCount: 3,
+    new: false, 
   },
   {
     name: 'Den Verstappen',
-    nickname: '',
+    hasNickname: true,
+    nickname: 'KuniLina',
     avatar: 'https://img.redbull.com/images/c_crop,x_914,y_1637,h_3171,w_3171/c_fill,g_auto,w_308,h_308/q_auto:low,f_auto/redbullcom/2022/5/5/esxtfazwc5k0xntwv20i/max-verstappen-profile-pic',
     isOnline: -1,
     unreadCount: 0,
+    new: false, 
   },
   {
     name: 'Leybron Jahames',
-    nickname: '',
+    hasNickname: true,
+    nickname: 'LeybronJahames',
     avatar: 'https://cdn.nba.com/headshots/nba/latest/1040x760/2544.png',
     isOnline: 0,
     unreadCount: 0,
+    new: true, 
   },
 ])
+
+const sortedChatLinks = computed(() =>
+  [...chatLinks.value].sort((first, second) => Number(second.new) - Number(first.new)),
+)
 
 const channelLinks = ref([
   {
@@ -311,16 +412,38 @@ const channelLinks = ref([
     isPrivate: true,
     unreadCount: 3,
     onlineCount: 5,
-    usersList: ['You', 'Alex Morgan', 'Den Verstappen'],
+    new: false, 
+    usersList: [
+      { name: 'You', isOnline: 1, admin: true },
+      { name: 'Alex Morgan', isOnline: 1, admin: false },
+      { name: 'Den Verstappen', isOnline: -1, admin: false },
+    ],
   },
   {
     name: 'Infinity Chat',
     isPrivate: false,
     unreadCount: 0,
     onlineCount: 0,
-    usersList: ['You', 'Den Verstappen', 'Leybron Jahames'],
+    new: false, 
+    usersList: [
+      { name: 'You', isOnline: 1, admin: true },
+      { name: 'Den Verstappen', isOnline: -1, admin: false },
+      { name: 'Leybron Jahames', isOnline: 0, admin: false },
+      { name: 'Leybron Jahames', isOnline: 0, admin: false },
+      { name: 'Leybron Jahames', isOnline: 0, admin: false },
+      { name: 'Leybron Jahames', isOnline: 0, admin: false },
+      { name: 'Leybron Jahames', isOnline: 0, admin: false },
+      { name: 'Leybron Jahames', isOnline: 0, admin: false },
+      { name: 'Leybron Jahames', isOnline: 0, admin: false },
+      { name: 'Leybron Jahames', isOnline: 0, admin: false },
+      { name: 'Leybron Jahames', isOnline: 0, admin: false },
+    ],
   },
 ])
+
+const sortedChannelLinks = computed(() =>
+  [...channelLinks.value].sort((first, second) => Number(second.new) - Number(first.new)),
+)
 
 provide('channelLinks', channelLinks)
 
@@ -335,21 +458,27 @@ function openAddChat() {
 
 function clearChatUnread(chatName) {
   const chat = chatLinks.value.find(({ name }) => name === chatName)
-  if (chat) chat.unreadCount = 0
+  if (chat) {
+    chat.unreadCount = 0
+    chat.new = false
+  }
 }
 
 function clearChannelUnread(channelName) {
   const channel = channelLinks.value.find(({ name }) => name === channelName)
-  if (channel) channel.unreadCount = 0
+  if (channel) {
+    channel.unreadCount = 0
+    channel.new = false
+  }
 }
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
 }
-const group = ref(null)
+const group = ref('public')
 const options = [
-  { label: 'Public', value: 'bat', color: 'positive'},
-  { label: 'Private', value: 'friend', color: 'negative' },
+  { label: 'Public',value: 'public', color: 'positive'},
+  { label: 'Private',value: 'private', color: 'negative' },
 ]
 </script>
 
@@ -364,14 +493,22 @@ const options = [
   width: clamp(32px, 8vw, 40px);
   height: clamp(32px, 8vw, 40px);
 }
+.channel-members-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 .channel-members {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  width: max-content;
   gap: 12px;
 }
 
 .selected-channel-member {
   position: relative;
+  flex: 0 0 auto;
 }
 
 .remove-channel-member {

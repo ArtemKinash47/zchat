@@ -16,28 +16,31 @@
           <span v-else>{{ getInitial(props.name) }}</span>
         </q-avatar>
 
-        <q-badge
-          :color="props.onlineCount > 0 ? 'positive' : 'grey'"
-          rounded
-          class="online-badge"
-        >
+        <q-badge :color="props.onlineCount > 0 ? 'positive' : 'grey'" rounded class="online-badge">
           {{ props.onlineCount }}
         </q-badge>
       </div>
     </q-item-section>
     <q-item-section>
-      <q-item-label>{{ props.name}}</q-item-label>
+      <q-item-label class="row items-center q-gutter-xs">
+        <span>{{ props.name }}</span>
+        <q-icon
+          :name="props.isPrivate ? 'vpn_lock' : 'public'"
+          :color="props.isPrivate ? 'negative' : 'positive'"
+          size="18px"
+        />
+      </q-item-label>
       <q-item-label v-if="props.caption" caption class="text-grey-7">
         {{ props.caption }}
       </q-item-label>
     </q-item-section>
-    
+
     <q-item-section side>
-      <q-badge v-if="props.unreadCount > 0" rounded color="accent" >
+      <q-badge v-if="props.new" rounded color="accent" label="!" />
+      <q-badge v-else-if="props.unreadCount > 0" rounded color="accent">
         {{ props.unreadCount }}
       </q-badge>
     </q-item-section>
-
   </q-item>
 </template>
 <style scoped>
@@ -85,14 +88,18 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  new: {
+    type: Boolean,
+    default: false,
+  },
   onlineCount: {
     type: Number,
     default: 0,
   },
   usersList: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
 })
 
 function getInitial(name) {

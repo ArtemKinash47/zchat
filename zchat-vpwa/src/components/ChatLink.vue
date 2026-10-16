@@ -27,7 +27,8 @@
     </q-item-section>
 
     <q-item-section side>
-      <q-badge v-if="props.unreadCount > 0" rounded color="accent" >
+      <q-badge v-if="props.new" rounded color="accent" label="!" />
+      <q-badge v-else-if="props.unreadCount > 0" rounded color="accent">
         {{ props.unreadCount }}
       </q-badge>
     </q-item-section>
@@ -77,6 +78,10 @@ const props = defineProps({
   unreadCount: {
     type: Number,
     default: 0,
+  },
+  new: {
+    type: Boolean,
+    default: false,
   },
 })
 
