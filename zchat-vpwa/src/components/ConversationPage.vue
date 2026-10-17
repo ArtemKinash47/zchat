@@ -3,7 +3,7 @@
     <div class="title_bar">
       <q-bar class="bg-secondary text-white">
         <div class="title_conv text-h5">
-          {{ conversationTitle || 'Select a conversation' }}
+          {{ chatName || 'Select a conversation' }}
         </div>
           <q-btn class="justify-end bg-primary" round  icon="more_horiz" @click="ChatInfoOpen = true"/>
       </q-bar>
@@ -99,6 +99,8 @@
     v-model:is-private="channelIsPrivate"
     :chat-type="channelType"
     :chat-name="chatName"
+    :chat-nickname="chatNickname"
+    :chat-avatar="chatAvatar"
     :participants="channelParticipants"
     @add-member="addChannelMember"
   />
@@ -110,6 +112,7 @@ import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
 import Commands from './Commands.vue'
 import ChatInfo from './ChatInfo.vue'
+import { knownNicknames } from '@/knownNicknames.js'
 import lebronAvatar from '@/assets/lebron.png'
 import denAvatar from '@/assets/den.jpg'
 
@@ -118,6 +121,7 @@ const route = useRoute()
 const text = ref('')
 const commandSelected = ref(false)
 const channelLinks = inject('channelLinks', ref([]))
+const chatLinks = inject('chatLinks', ref([]))
 const messagesScrollArea = ref(null)
 const messageHistory = ref(null)
 const ChatInfoOpen = ref(false)
@@ -144,58 +148,64 @@ function onTextChanged() {
   commandSelected.value = false
 }
 
-const conversationTitle = computed(() => {
-  const channel = route.query.channel
-  if (typeof channel === 'string' && channel) return `# ${channel}`
+const queryString = (value) => (typeof value === 'string' ? value : '')
 
-  const name = route.query.name
-  if (typeof name !== 'string' || !name) return ''
+const channelQuery = computed(() => queryString(route.query.channel))
+const nameQuery = computed(() => queryString(route.query.name))
 
-  return `Direct message with ${name}`
-})
-const chatName = computed(() => {
-  const channel = route.query.channel
-  if (typeof channel === 'string' && channel) return channel
+const normalize = (value) => value.trim().replace(/^@/, '').toLowerCase()
 
-  const name = route.query.name
-  return typeof name === 'string' ? name : ''
-})
-const channelType = computed(() => {
-  const channelType = route.query.channel
-  if (typeof channelType === 'string' && channelType) return 2
+const currentChannel = computed(() =>
+  channelQuery.value
+    ? channelLinks.value.find(({ name }) => name === channelQuery.value)
+    : undefined,
+)
 
-  const nameType = route.query.name
-  if (typeof nameType === 'string' && nameType) return 1
+const directChat = computed(() => {
+  if (!nameQuery.value) return null
+  const target = normalize(nameQuery.value)
 
-  return null
-})
-
-const channelParticipants = computed(() => {
-  const channelName = route.query.channel
-  if (typeof channelName !== 'string' || !channelName) return []
-
-  const channel = channelLinks.value.find(({ name }) => name === channelName)
-  return (channel?.usersList ?? []).map((member, index) =>
-    typeof member === 'string' ? { id: index, name: member } : { id: index, ...member },
+  return (
+    chatLinks.value.find(({ name, nickname }) =>
+      [name, nickname].some((id) => typeof id === 'string' && normalize(id) === target),
+    ) ?? null
   )
 })
 
-const channelIsPrivate = computed({
-  get() {
-    const channelName = route.query.channel
-    if (typeof channelName !== 'string' || !channelName) return false
-
-    return channelLinks.value.find(({ name }) => name === channelName)?.isPrivate ?? false
-  },
-  set(isPrivate) {
-    const channelName = route.query.channel
-    if (typeof channelName !== 'string' || !channelName) return
-
-    const channel = channelLinks.value.find(({ name }) => name === channelName)
-    if (channel) channel.isPrivate = isPrivate
-  },
+const conversationTitle = computed(() => {
+  if (channelQuery.value) return `${channelQuery.value}`
+  if (nameQuery.value) return `${nameQuery.value}`
+  return ''
 })
 
+const chatName = computed(() =>
+  channelQuery.value || (directChat.value?.name ?? nameQuery.value),
+)
+
+const chatNickname = computed(() => directChat.value?.nickname ?? '')
+
+const channelType = computed(() => {
+  if (channelQuery.value) return 2
+  if (nameQuery.value) return 1
+  return null
+})
+
+const chatAvatar = computed(() =>
+  channelQuery.value ? (currentChannel.value?.avatar ?? '') : (directChat.value?.avatar ?? ''),
+)
+
+const channelParticipants = computed(() =>
+  (currentChannel.value?.usersList ?? []).map((member, index) =>
+    typeof member === 'string' ? { id: index, name: member } : { id: index, ...member },
+  ),
+)
+
+const channelIsPrivate = computed({
+  get: () => currentChannel.value?.isPrivate ?? false,
+  set: (value) => {
+    if (currentChannel.value) currentChannel.value.isPrivate = value
+  },
+})
 function addChannelMember(name) {
   const channelName = route.query.channel
   if (typeof channelName !== 'string' || !channelName) return
@@ -272,7 +282,7 @@ const messagesByConversation = ref({
       avatar: 'https://cdn.quasar.dev/img/avatar.png',
     },
   ],
-  'direct:Den Verstappen': [
+  'direct:KuniLina': [
     {
       id: 6,
       sender: 'Den Verstappen',
@@ -312,7 +322,7 @@ const messagesByConversation = ref({
         denAvatar,
     },
   ],
-  'direct:Leybron Jahames': [
+  'direct:LeybronJahames': [
     {
       id: 11,
       sender: 'Leybron Jahames',
@@ -685,8 +695,6 @@ function pageStyleFn(offset) {
   return { height: `calc(100dvh - ${offset}px)` }
 }
 
-const knownNicknames = new Set(['alexmorgan', 'your_nickname'])
-
 function messageParts(message) {
   return message
     .split(/(@[A-Za-z0-9_]+)/g)
@@ -695,7 +703,7 @@ function messageParts(message) {
       text,
       isMention:
         text.startsWith('@') &&
-        knownNicknames.has(text.slice(1).toLowerCase()),
+        knownNicknames.includes(text.slice(1).toLowerCase()),
     }))
 }
 

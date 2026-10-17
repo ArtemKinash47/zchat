@@ -6,9 +6,13 @@
       </q-card-section>
       <q-card-section class="profile-fields column items-center">
         <q-avatar size="72px" color="primary" text-color="white">
-          <img src="https://cdn.quasar.dev/img/avatar4.jpg" />
+          <img v-if="props.chatAvatar" :src="props.chatAvatar" :alt="`${props.chatName} avatar`" />
+          <span v-else>{{ getInitial(props.chatName) }}</span>
         </q-avatar>
         <div class="text-h6 text-accent">{{ props.chatName || 'Profile' }}</div>
+        <div v-if="props.chatType === 1 && props.chatNickname" class="text-caption text-grey-7">
+          @{{ props.chatNickname }}
+        </div>
 
         <div v-if="props.chatType === 2" class="members-section">
           <div class="q-pa-md">
@@ -92,7 +96,15 @@ const props = defineProps({
     type: Number,
     default: null,
   },
+  chatAvatar: {
+    type: String,
+    default: '',
+  },
   chatName: {
+    type: String,
+    default: '',
+  },
+  chatNickname: {
     type: String,
     default: '',
   },
@@ -101,6 +113,10 @@ const props = defineProps({
     default: () => [],
   },
 })
+
+function getInitial(name) {
+  return name.trim().charAt(0).toUpperCase() || '?'
+}
 
 function addMember() {
   const name = newMemberName.value.trim()

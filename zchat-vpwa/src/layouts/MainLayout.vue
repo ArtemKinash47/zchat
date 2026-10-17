@@ -25,8 +25,8 @@
           no-caps
           class="col-auto"
         >
-          <q-tab :class="Dark.isActive ? 'text-accent' : 'text-accent'" name="Direct Messages" label="Direct Messages" />
-          <q-tab :class="Dark.isActive ? 'text-warning' : 'text-secondary'" name="Channels" label="Channels" />
+          <q-tab class="text-accent" name="Direct Messages" label="Direct Messages" />
+          <q-tab class="text-secondary" name="Channels" label="Channels" />
         </q-tabs>
 
         <q-separator />
@@ -241,14 +241,12 @@
 </template>
 <script setup>
 import { computed, provide, ref } from 'vue'
-import { Dark } from 'quasar'
 import { useRouter } from 'vue-router'
 import ChatLink from '@/components/ChatLink.vue'
 import ChannelLink from '@/components/ChannelLink.vue'
 import MyProfile from '@/components/MyProfile.vue'
 import Settings from '@/components/Settings.vue'
-import lebronAvatar from '@/assets/lebron.png'
-import denAvatar from '@/assets/den.jpg'
+import { knownNicknames } from '@/knownNicknames.js'
 
 const router = useRouter()
 const text_200 = ref('')
@@ -257,8 +255,7 @@ const dense = ref(false)
 const text_400 = ref('')
 const selectedChannelMembers = ref([])
 
-const allOptions = ['ninja', 'pewdiepie', 'pokimane', 'shroud', 'xqc', 'gaming_sk']
-const options_fill = ref(allOptions)
+const options_fill = ref(knownNicknames)
 
 function filterFn (val, update) {
   update(() => {
@@ -269,7 +266,7 @@ function filterFn (val, update) {
       return
     }
 
-    options_fill.value = allOptions
+    options_fill.value = knownNicknames
       .filter(v => v.toLowerCase().includes(needle))
       .slice(0, 50)
   })
@@ -283,15 +280,21 @@ function setChatInput(val) {
   text_200.value = val.slice(0, 67)
 }
 
+function getAvatarUrl(nickname) {
+  const nicknameIndex = knownNicknames.findIndex(
+    (knownNickname) => knownNickname.toLowerCase() === nickname.toLowerCase(),
+  )
+  return `https://cdn.quasar.dev/img/avatar${(Math.max(nicknameIndex, 0) % 6) + 1}.jpg`
+}
+
 function addChannelMember () {
   const nickname = text_400.value.trim()
   if (!nickname) return
 
   if (!selectedChannelMembers.value.some(member => member.nickname === nickname)) {
-    const avatarIndex = allOptions.indexOf(nickname) + 1
     selectedChannelMembers.value.push({
       nickname,
-      avatar: `https://cdn.quasar.dev/img/avatar${avatarIndex > 0 ? avatarIndex : 1}.jpg`,
+      avatar: getAvatarUrl(nickname),
     })
   }
 
@@ -319,7 +322,7 @@ function addChat() {
     name: nickname,
     hasNickname: true,
     nickname: `@${nickname}`,
-    avatar: `https://cdn.quasar.dev/img/avatar${(allOptions.indexOf(nickname) % 6) + 1}.jpg`,
+    avatar: getAvatarUrl(nickname),
     isOnline: 0,
     unreadCount: 0,
     new: true,
@@ -389,7 +392,7 @@ const chatLinks = ref([
     name: 'Den Verstappen',
     hasNickname: true,
     nickname: 'KuniLina',
-    avatar: denAvatar,
+    avatar: 'https://img.redbull.com/images/c_crop,x_914,y_1637,h_3171,w_3171/c_fill,g_auto,w_308,h_308/q_auto:low,f_auto/redbullcom/2022/5/5/esxtfazwc5k0xntwv20i/max-verstappen-profile-pic',
     isOnline: -1,
     unreadCount: 0,
     new: false, 
@@ -398,7 +401,7 @@ const chatLinks = ref([
     name: 'Leybron Jahames',
     hasNickname: true,
     nickname: 'LeybronJahames',
-    avatar: lebronAvatar,
+    avatar: 'https://cdn.nba.com/headshots/nba/latest/1040x760/2544.png',
     isOnline: 0,
     unreadCount: 0,
     new: true, 
@@ -449,6 +452,7 @@ const sortedChannelLinks = computed(() =>
 )
 
 provide('channelLinks', channelLinks)
+provide('chatLinks', chatLinks)
 
 const leftDrawerOpen = ref(false)
 const profileWindowOpen = ref(false)
