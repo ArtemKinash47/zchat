@@ -6,6 +6,10 @@
         clearable
         clear-icon="close"
         filled
+        lazy-rules
+        counter
+        maxlength="20"
+        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
         color="info"
         v-model="name"
         label="Name"
@@ -16,6 +20,10 @@
         clearable
         clear-icon="close"
         filled
+        lazy-rules
+        counter
+        maxlength="20"
+        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
         color="info"
         v-model="surname"
         label="Surname"
@@ -26,6 +34,10 @@
         clearable
         clear-icon="close"
         filled
+        lazy-rules
+        counter
+        maxlength="20"
+        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
         color="info"
         v-model="nickname"
         label="Nickname"
@@ -36,6 +48,10 @@
         v-model="email"
         filled
         color="info"
+        lazy-rules
+        counter
+        maxlength="20"
+        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
         type="email"
         hint="Email"
       />
@@ -44,6 +60,10 @@
         class="registration-input"
         v-model="password"
         filled
+        lazy-rules
+        counter
+        maxlength="30"
+        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
         color="info"
         type="password"
         hint="Enter Password"
@@ -52,6 +72,10 @@
         class="registration-input"
         v-model="passwordConf"
         filled
+        lazy-rules
+        counter
+        maxlength="30"
+        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
         color="info"
         :type="isPwd ? 'password' : 'text'"
         hint="Confirm Password"

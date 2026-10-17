@@ -108,7 +108,8 @@
               @input-value="setChatInput"
               label="Enter nickname"
               stack-label
-              maxlength="67"
+              color="accent"
+              maxlength="20"
               :dense="dense"
             >
               <template #before>
@@ -147,6 +148,7 @@
               label="Enter channel name"
               stack-label
               :dense="dense"
+              color="accent"
             >
             </q-input>
             <div class="q-pa-md">
@@ -160,6 +162,8 @@
               fill-input
               hide-dropdown-icon
               hide-no-option
+              maxlength="20"
+              color="accent"
               input-debounce="150"
               :options="options_fill"
               @filter="filterFn"
@@ -173,7 +177,7 @@
             >
               <template #no-option>
                 <q-item>
-                  <q-item-section class="text-grey">Žiadne návrhy</q-item-section>
+                  <q-item-section class="text-grey">No suggestions found</q-item-section>
                 </q-item>
               </template>
 

@@ -15,6 +15,10 @@
           clearable
           clear-icon="close"
           filled
+          lazy-rules
+          counter
+          maxlength="20"
+          :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
           color="secondary"
           label="Name"
           class="profile-input"
@@ -24,6 +28,10 @@
           clearable
           clear-icon="close"
           filled
+          lazy-rules
+          counter
+          maxlength="20"
+          :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
           color="secondary"
           label="Surname"
           class="profile-input"
@@ -33,6 +41,10 @@
           clearable
           clear-icon="close"
           filled
+          lazy-rules
+          counter
+          maxlength="20"
+          :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
           color="secondary"
           label="Nickname"
           class="profile-input"
@@ -42,6 +54,10 @@
           clearable
           clear-icon="close"
           filled
+          lazy-rules
+          counter
+          maxlength="20"
+          :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
           color="secondary"
           label="Email"
           type="email"
@@ -50,6 +66,10 @@
         <q-input
           v-model="password"
           filled
+          lazy-rules
+          counter
+          maxlength="30"
+          :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
           :type="isPwd ? 'password' : 'text'"
           hint="Enter your password to save changes"
           class="profile-input"
@@ -58,6 +78,10 @@
         <q-input
           v-model="passwordConf"
           filled
+          lazy-rules
+          counter
+          maxlength="30"
+          :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
           :type="isPwdConf ? 'password' : 'text'"
           hint="Confirm your password to save changes"
           class="profile-input"

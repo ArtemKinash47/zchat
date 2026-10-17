@@ -50,6 +50,8 @@
               v-model="newMemberName"
               outlined
               dense
+              maxlength="20"
+              color="accent"
               class="col"
               label="New member name"
               @keydown.enter.prevent="addMember"

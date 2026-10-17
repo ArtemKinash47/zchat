@@ -6,6 +6,10 @@
         clearable
         clear-icon="close"
         filled
+        lazy-rules
+        counter
+        maxlength="20"
+        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
         color="accent"
         v-model="text"
         label="Nickname"
@@ -14,6 +18,10 @@
         class="registration-input"
         v-model="password"
         filled
+        lazy-rules
+        counter
+        maxlength="30"
+        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
         color="accent"
         :type="isPwd ? 'password' : 'text'"
         hint="Confirm Password"

@@ -58,6 +58,7 @@ const group = ref('onl')
 const { logout } = useAuth()
 const direct = ref(false)
 function onItemClick() {
+  Dark.set(false)
   logout()
   router.push('/auth')
 }
