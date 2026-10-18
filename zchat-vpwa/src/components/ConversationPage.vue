@@ -672,7 +672,7 @@ function sendMessage() {
     $q.notify({
       icon: 'notifications',
       position: 'bottom-right',
-      message: `${msg.sender} have sent: ${messageText}`,
+      message: `${msg.sender} have sent: ${messageText.length < 20 ? messageText : `${messageText.slice(0, 20)}…`}`,
       color: 'primary',
       textColor: 'white',
     })

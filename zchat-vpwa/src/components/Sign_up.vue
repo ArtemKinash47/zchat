@@ -24,7 +24,7 @@
         :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
         color="accent"
         :type="isPwd ? 'password' : 'text'"
-        hint="Confirm Password"
+        label="Password"
       >
         <template #append>
           <q-icon
