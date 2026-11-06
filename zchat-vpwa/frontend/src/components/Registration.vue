@@ -50,7 +50,7 @@
         color="info"
         lazy-rules
         counter
-        maxlength="20"
+        maxlength="254"
         :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
         type="email"
         hint="Email"
@@ -62,8 +62,8 @@
         filled
         lazy-rules
         counter
-        maxlength="30"
-        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
+        maxlength="32"
+        :rules="[(val) => (val && val.length >= 8) || 'Minimum 8 symbols']"
         color="info"
         type="password"
         hint="Enter Password"
@@ -74,8 +74,11 @@
         filled
         lazy-rules
         counter
-        maxlength="30"
-        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
+        maxlength="32"
+        :rules="[
+          (val) => (val && val.length >= 8) || 'Minimum 8 symbols',
+          (val) => val === password || 'Passwords do not match',
+        ]"
         color="info"
         :type="isPwd ? 'password' : 'text'"
         hint="Confirm Password"
@@ -138,6 +141,13 @@ const passwordConf = ref('')
 const isPwd = ref(true)
 
 function onSubmit() {
-  emit('submit', { name: name.value, surname: surname.value, nickname: nickname.value, email: email.value, password: password.value })
+  emit('submit', {
+    name: name.value,
+    surname: surname.value,
+    nickname: nickname.value,
+    email: email.value,
+    password: password.value,
+    passwordConf: passwordConf.value,
+  })
 }
 </script>

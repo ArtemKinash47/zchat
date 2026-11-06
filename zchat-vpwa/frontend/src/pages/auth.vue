@@ -9,6 +9,17 @@
         </div>
 
         <div v-else class="auth-box">
+          <q-banner
+            v-if="authError"
+            class="q-mb-md text-center"
+            rounded
+            dense
+            color="negative"
+            text-color="primary"
+          >
+            {{ authError.toUpperCase() }}
+          </q-banner>
+
           <q-tabs
             v-model="tab"
             align="justify"
@@ -51,13 +62,58 @@ const router = useRouter()
 const { login } = useAuth()
 const tab = ref('Sign In')
 const loading = ref(false)
+const authError = ref('')
 
-async function onAuth() {
+const API_URL = 'http://localhost:3333/api/v1'
+
+async function onAuth(formData) {
+  authError.value = ''
   loading.value = true
-  await new Promise((resolve) => setTimeout(resolve, 1500))
-  login()
-  await router.push('/')
+
+  try {
+    const regSelected = tab.value === 'Registration'
+    const response = await fetch(`${API_URL}/auth/${regSelected ? 'signup' : 'login'}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(
+        regSelected
+          ? {
+              firstName: formData.name,
+              lastName: formData.surname,
+              email: formData.email,
+              password: formData.password,
+              passwordConfirmation: formData.passwordConf,
+            }
+          : {
+              email: formData.email,
+              password: formData.password,
+            },
+      ),
+    })
+
+    const result = await response.json()
+    if (!response.ok) {
+      if (!regSelected && response.status === 401) {
+        throw new Error('Incorrect email or password.')
+      }
+
+      const message = result.message || result.errors?.[0]?.message
+      throw new Error(message || `Authentication failed (${response.status}).`)
+    }
+    localStorage.setItem('token', result.token)
+    login()
+    await router.push('/')
+  } catch (error) {
+    console.error(error)
+    authError.value =
+      error instanceof TypeError
+        ? 'Could not connect to the server. Check that the backend is running and try again.'
+        : error.message
+  } finally {
+    loading.value = false
+  }
 }
+
 </script>
 
 <style scoped>

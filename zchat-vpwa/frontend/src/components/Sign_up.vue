@@ -7,21 +7,28 @@
         clear-icon="close"
         filled
         lazy-rules
+        autocomplete="email"
         counter
-        maxlength="20"
-        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
+        maxlength="254"
+        :rules="[
+          (val) => !!val?.trim() || 'Email is required',
+          (val) =>
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || 'Enter a valid email address',
+        ]"
         color="accent"
-        v-model="text"
-        label="Nickname"
+        v-model="email"
+        type="email"
+        label="Email"
       />
       <q-input
         class="registration-input"
         v-model="password"
         filled
         lazy-rules
+        autocomplete="current-password"
         counter
-        maxlength="30"
-        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
+        maxlength="32"
+        :rules="[(val) => !!val || 'Password is required']"
         color="accent"
         :type="isPwd ? 'password' : 'text'"
         label="Password"
@@ -75,11 +82,11 @@
 import { ref } from 'vue'
 
 const emit = defineEmits(['submit'])
-const nickname = ref('')
+const email = ref('')
 const password = ref('')
 const isPwd = ref(true)
 
 function onSubmit() {
-  emit('submit', { nickname: nickname.value, password: password.value })
+  emit('submit', { email: email.value, password: password.value })
 }
 </script>
