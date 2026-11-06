@@ -9,7 +9,7 @@
         lazy-rules
         counter
         maxlength="20"
-        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
+        :rules="[(val) => (val && val.trim().length >= 2) || 'Minimum 2 symbols']"
         color="info"
         v-model="name"
         label="Name"
@@ -23,7 +23,7 @@
         lazy-rules
         counter
         maxlength="20"
-        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
+        :rules="[(val) => (val && val.trim().length >= 2) || 'Minimum 2 symbols']"
         color="info"
         v-model="surname"
         label="Surname"
@@ -37,7 +37,7 @@
         lazy-rules
         counter
         maxlength="20"
-        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
+        :rules="[(val) => (val && val.trim().length >= 4) || 'Minimum 4 symbols']"
         color="info"
         v-model="nickname"
         label="Nickname"
@@ -51,7 +51,7 @@
         lazy-rules
         counter
         maxlength="254"
-        :rules="[(val) => (val && val.trim().length >= 5) || 'Minimum 5 symbols']"
+        :rules="[(val) => (val && val.trim().length >= 4) || 'Minimum 4 symbols']"
         type="email"
         hint="Email"
       />
@@ -63,7 +63,7 @@
         lazy-rules
         counter
         maxlength="32"
-        :rules="[(val) => (val && val.length >= 8) || 'Minimum 8 symbols']"
+        :rules="[(val) => (val && val.length >= 6) || 'Minimum 6 symbols']"
         color="info"
         type="password"
         hint="Enter Password"
@@ -76,7 +76,7 @@
         counter
         maxlength="32"
         :rules="[
-          (val) => (val && val.length >= 8) || 'Minimum 8 symbols',
+          (val) => (val && val.length >= 6) || 'Minimum 6 symbols',
           (val) => val === password || 'Passwords do not match',
         ]"
         color="info"

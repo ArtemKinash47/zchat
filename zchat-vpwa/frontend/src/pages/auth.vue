@@ -81,6 +81,7 @@ async function onAuth(formData) {
               firstName: formData.name,
               lastName: formData.surname,
               email: formData.email,
+              nickname: formData.nickname,
               password: formData.password,
               passwordConfirmation: formData.passwordConf,
             }
@@ -94,11 +95,11 @@ async function onAuth(formData) {
     const result = await response.json()
     if (!response.ok) {
       if (!regSelected && response.status === 401) {
-        throw new Error('Incorrect email or password.')
+        throw new Error('invalid email or password.')
       }
 
       const message = result.message || result.errors?.[0]?.message
-      throw new Error(message || `Authentication failed (${response.status}).`)
+      throw new Error(message || `auth failed (${response.status}).`)
     }
     localStorage.setItem('token', result.token)
     login()
@@ -107,7 +108,7 @@ async function onAuth(formData) {
     console.error(error)
     authError.value =
       error instanceof TypeError
-        ? 'Could not connect to the server. Check that the backend is running and try again.'
+        ? 'could not connect to the server'
         : error.message
   } finally {
     loading.value = false
