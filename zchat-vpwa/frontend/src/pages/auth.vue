@@ -101,7 +101,9 @@ async function onAuth(formData) {
       const message = result.message || result.errors?.[0]?.message
       throw new Error(message || `auth failed (${response.status}).`)
     }
-    localStorage.setItem('token', result.token)
+    const payload = result.data ?? result
+    if (!payload.token) throw new Error('missing token in server response.')
+    localStorage.setItem('token', payload.token)
     login()
     await router.push('/')
   } catch (error) {

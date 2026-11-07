@@ -14,7 +14,6 @@ import { controllers } from '#generated/controllers'
 router.get('/', () => {
   return { hello: 'world' }
 })
-
 router
   .group(() => {
     router
@@ -27,11 +26,15 @@ router
 
     router
       .group(() => {
+        router.post('chats/direct', '#controllers/chats_controller.storeDirect')
+        router.get('chats', '#controllers/chats_controller.index')
+        router.get('chats/:id/messages', '#controllers/messages_controller.index')
+        router.post('chats/:id/messages', '#controllers/messages_controller.store')
         router.get('profile', [controllers.Profile, 'show'])
         router.post('logout', [controllers.AccessTokens, 'destroy'])
       })
       .prefix('account')
       .as('profile')
       .use(middleware.auth({ guards: ['api'] }))
-  })
+      })
   .prefix('/api/v1')

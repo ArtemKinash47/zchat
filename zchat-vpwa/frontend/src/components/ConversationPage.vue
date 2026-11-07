@@ -113,8 +113,6 @@ import { useRoute } from 'vue-router'
 import Commands from './Commands.vue'
 import ChatInfo from './ChatInfo.vue'
 import { knownNicknames } from '@/knownNicknames.js'
-import lebronAvatar from '@/assets/lebron.png'
-import denAvatar from '@/assets/den.jpg'
 
 const $q = useQuasar()
 const route = useRoute()
@@ -125,7 +123,6 @@ const chatLinks = inject('chatLinks', ref([]))
 const messagesScrollArea = ref(null)
 const messageHistory = ref(null)
 const ChatInfoOpen = ref(false)
-const visibleMessageCount = ref(10)
 
 function scrollMessagesToBottom() {
   nextTick(() => {
@@ -230,454 +227,113 @@ function addChannelMember(name) {
   channel.usersList.push({ name: name.trim(), isOnline: 0, admin: false })
 }
 
-const messagesByConversation = ref({
-  'direct:alexmorgan': [
-    {
-      id: 1,
-      sender: 'Alex Morgan',
-      text: 'Hey, how is the project going?',
-      time: '09:15',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-    {
-      id: 2,
-      sender: 'You',
-      text: 'Pretty well! I finished the layout.',
-      time: '09:17',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 3,
-      sender: 'Alex Morgan',
-      text: 'Nice! Can you share a preview?',
-      time: '09:18',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-    {
-      id: 4,
-      sender: 'You',
-      text: 'Sure, I will send it shortly.',
-      time: '09:20',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 5,
-      sender: 'Alex Morgan',
-      text: 'Thanks, looking forward to it.',
-      time: '09:21',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-    {
-      id: 26,
-      sender: 'Alex Morgan',
-      text: 'JD?',
-      time: '10:00',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-    {
-      id: 27,
-      sender: 'Alex Morgan',
-      text: 'Where is it?',
-      time: '10:01',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-  ],
-  'direct:KuniLina': [
-    {
-      id: 6,
-      sender: 'Den Verstappen',
-      text: 'Are we still meeting today?',
-      time: '10:02',
-      avatar:
-        denAvatar,
-    },
-    {
-      id: 7,
-      sender: 'You',
-      text: 'Yes, at 2 PM.',
-      time: '10:04',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 8,
-      sender: 'Den Verstappen',
-      text: 'Great, I will bring the notes.',
-      time: '10:05',
-      avatar:
-        denAvatar,
-    },
-    {
-      id: 9,
-      sender: 'You',
-      text: 'Perfect, see you then.',
-      time: '10:06',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 10,
-      sender: 'Den Verstappen',
-      text: 'See you!',
-      time: '10:07',
-      avatar:
-        denAvatar,
-    },
-  ],
-  'direct:LeybronJahames': [
-    {
-      id: 11,
-      sender: 'Leybron Jahames',
-      text: 'I pushed the latest changes.',
-      time: '11:30',
-      avatar: lebronAvatar,
-    },
-    {
-      id: 12,
-      sender: 'You',
-      text: 'Thanks, I will review them.',
-      time: '11:32',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 13,
-      sender: 'Leybron Jahames',
-      text: 'The tests are passing now.',
-      time: '11:33',
-      avatar: lebronAvatar,
-    },
-    {
-      id: 14,
-      sender: 'You',
-      text: 'Great work!',
-      time: '11:35',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 15,
-      sender: 'Leybron Jahames',
-      text: 'Let me know if anything needs fixing.',
-      time: '11:36',
-      avatar: lebronAvatar,
-    },
-  ],
-  'channel:Design Team': [
-    {
-      id: 16,
-      sender: 'Alex Morgan',
-      text: 'I added the new dashboard mockups.',
-      time: '13:10',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-    {
-      id: 17,
-      sender: 'You',
-      text: 'The colors look good.',
-      time: '13:12',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 18,
-      sender: 'Den Verstappen',
-      text: 'I agree. The layout feels clearer.',
-      time: '13:14',
-      avatar:
-        denAvatar,
-    },
-    {
-      id: 19,
-      sender: 'You',
-      text: 'I will update the buttons to match.',
-      time: '13:16',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 20,
-      sender: 'Alex Morgan',
-      text: 'Thanks, everyone!',
-      time: '13:18',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-    {
-      id: 28,
-      sender: 'Den Verstappen',
-      text: 'TU TU TUTU!',
-      time: '13:14',
-      avatar:
-        denAvatar,
-    },
-    {
-      id: 29,
-      sender: 'Den Verstappen',
-      text: 'DEN VERSTAPPEN!',
-      time: '13:14',
-      avatar:
-        denAvatar,
-    },
-  ],
-  'channel:Infinity Chat': [
-    {
-      id: 21,
-      sender: 'Leybron Jahames',
-      text: 'Welcome to the project chat.',
-      time: '14:00',
-      avatar: lebronAvatar,
-    },
-    {
-      id: 22,
-      sender: 'You',
-      text: 'Happy to be here!',
-      time: '14:02',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 23,
-      sender: 'Leybron Jahames',
-      text: 'We use this channel for general updates.',
-      time: '14:03',
-      avatar: lebronAvatar,
-    },
-    {
-      id: 24,
-      sender: 'You',
-      text: 'Got it, thanks.',
-      time: '14:04',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 25,
-      sender: 'Leybron Jahames',
-      text: 'Feel free to ask any questions.',
-      time: '14:05',
-      avatar: lebronAvatar,
-    },
-    {
-      id: 30,
-      sender: 'Alex Morgan',
-      text: 'What is everyone working on today?',
-      time: '14:06',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-    {
-      id: 31,
-      sender: 'You',
-      text: 'I am checking the chat layout on mobile.',
-      time: '14:07',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 32,
-      sender: 'Leybron Jahames',
-      text: 'I will review the latest changes after lunch.',
-      time: '14:08',
-      avatar: lebronAvatar,
-    },
-    {
-      id: 33,
-      sender: 'Den Verstappen',
-      text: 'I can test it on my phone too.',
-      time: '14:09',
-      avatar:
-        denAvatar,
-    },
-    {
-      id: 34,
-      sender: 'Alex Morgan',
-      text: 'That would be helpful, thanks!',
-      time: '14:10',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-    {
-      id: 35,
-      sender: 'You',
-      text: 'The input and command list should now fit smaller screens better.',
-      time: '14:12',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 36,
-      sender: 'Leybron Jahames',
-      text: 'Looks good from here. The spacing feels much cleaner.',
-      time: '14:14',
-      avatar: lebronAvatar,
-    },
-    {
-      id: 37,
-      sender: 'Den Verstappen',
-      text: 'I checked the phone view. Everything is readable.',
-      time: '14:16',
-      avatar:
-        denAvatar,
-    },
-    {
-      id: 38,
-      sender: 'Alex Morgan',
-      text: 'Can we also try the mention suggestions?',
-      time: '14:18',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-    {
-      id: 39,
-      sender: 'You',
-      text: 'Sure, I will test typing @alex in the middle of a message.',
-      time: '14:19',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 40,
-      sender: 'Leybron Jahames',
-      text: 'It should show matching accounts as soon as you type.',
-      time: '14:21',
-      avatar: lebronAvatar,
-    },
-    {
-      id: 41,
-      sender: 'Den Verstappen',
-      text: 'I will try a few different usernames.',
-      time: '14:23',
-      avatar:
-        denAvatar,
-    },
-    {
-      id: 42,
-      sender: 'Alex Morgan',
-      text: 'The channel history is looking more realistic now.',
-      time: '14:25',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-    {
-      id: 43,
-      sender: 'You',
-      text: 'I added some sample messages so we can check scrolling too.',
-      time: '14:26',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 44,
-      sender: 'Leybron Jahames',
-      text: 'Great. @your_nickname I will scroll back and check that older messages stay accessible.',
-      time: '14:27',
-      avatar: lebronAvatar,
-    },
-    {
-      id: 45,
-      sender: 'Den Verstappen',
-      text: 'Scrolling works smoothly on mobile.',
-      time: '14:28',
-      avatar:
-        denAvatar,
-    },
-    {
-      id: 46,
-      sender: 'Alex Morgan',
-      text: 'Nice work, everyone. Let us keep sharing updates here.',
-      time: '14:29',
-      avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    },
-    {
-      id: 47,
-      sender: 'You',
-      text: 'Sounds good! I will post again after the next round of testing.',
-      time: '14:30',
-      avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-    },
-    {
-      id: 48,
-      sender: 'Leybron Jahames',
-      text: 'Thanks for the update.',
-      time: '14:31',
-      avatar: lebronAvatar,
-    },
-    {
-      id: 49,
-      sender: 'Den Verstappen',
-      text: 'All good on my side too!',
-      time: '14:32',
-      avatar:
-        denAvatar,
-    },
-  ],
-})
+const API_URL = 'http://localhost:3333/api/v1/account'
+const PAGE_SIZE = 20
+const MY_AVATAR = 'https://cdn.quasar.dev/img/avatar4.jpg'
 
-const activeConversationKey = computed(() => {
-  const channel = route.query.channel
-  if (typeof channel === 'string' && channel) return `channel:${channel}`
+const messagesByConversation = ref({})
+const hasMoreByConversation = ref({})
+let sysMsgCounter = 0
 
-  const name = route.query.name
-  if (typeof name === 'string' && name) return `direct:${name}`
-
+const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
+const activeConversation = computed(() => {
+  if (channelQuery.value && currentChannel.value?.id) {
+    return { key: `channel:${currentChannel.value.id}`, type: 'channel', id: currentChannel.value.id }
+  }
+  if (nameQuery.value && directChat.value?.id) {
+    return { key: `direct:${directChat.value.id}`, type: 'direct', id: directChat.value.id }
+  }
   return null
 })
 
-const allMsgs = computed(() => {
-  const key = activeConversationKey.value
-  return key ? (messagesByConversation.value[key] ?? []) : []
+const msgs = computed(() => {
+  const conv = activeConversation.value
+  return conv ? (messagesByConversation.value[conv.key] ?? []) : []
 })
 
-const msgs = computed(() => allMsgs.value.slice(-visibleMessageCount.value))
+function formatTime(iso) {
+  return iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+}
 
-watch(activeConversationKey, () => {
-  visibleMessageCount.value = 10
-  nextTick(() => {
-    messageHistory.value?.reset()
-    messageHistory.value?.resume()
-    scrollMessagesToBottom()
-  })
-})
-
-watch(() => allMsgs.value.length, scrollMessagesToBottom, {
-  flush: 'post',
-})
-
-let nextMsgId = 50
-
-function sendMessage() {
-  const key = activeConversationKey.value
-  const messageText = text.value.trim()
-  if (!key || !messageText) {
-    return
+function mapMessage(m) {
+  return {
+    id: m.id,
+    sender: m.mine ? 'You' : m.sender,
+    text: m.content,
+    time: formatTime(m.createdAt),
+    avatar: m.mine ? MY_AVATAR : undefined,
   }
+}
+
+async function fetchMessages(conv, before) {
+  const params = new URLSearchParams({ type: conv.type, limit: PAGE_SIZE })
+  if (before) params.set('before', before)
+  const res = await fetch(`${API_URL}/chats/${conv.id}/messages?${params}`, { headers: authHeaders() })
+  if (!res.ok) throw new Error(`messages ${res.status}`)
+  return res.json()
+}
+
+async function onLoad(_index, done) {
+  const conv = activeConversation.value
+  if (!conv || hasMoreByConversation.value[conv.key] === false) return done(true)
+
+  const list = messagesByConversation.value[conv.key] ?? []
+  const oldestId = list.find((m) => typeof m.id === 'number')?.id
+  try {
+    const data = await fetchMessages(conv, oldestId)
+    messagesByConversation.value[conv.key] = [...data.messages.map(mapMessage), ...list]
+    hasMoreByConversation.value[conv.key] = data.hasMore
+    done(!data.hasMore)
+  } catch (e) {
+    console.error(e)
+    done(true)
+  }
+}
+watch(
+  () => activeConversation.value?.key,
+  () => {
+    nextTick(() => {
+      messageHistory.value?.reset()
+      messageHistory.value?.resume()
+    })
+  },
+)
+watch(() => msgs.value.at(-1)?.id, scrollMessagesToBottom, { flush: 'post' })
+
+async function sendMessage() {
+  const conv = activeConversation.value
+  const messageText = text.value.trim()
+  if (!conv || !messageText) return
+
+  const list = messagesByConversation.value[conv.key] ?? []
 
   if (messageText === '/list') {
-    const channelName = route.query.channel
-    const directName = route.query.name
-    const channel = channelLinks.value.find(({ name }) => name === channelName)
-    const members = channelName
-      ? (channel?.usersList ?? []).map((member) =>
-          typeof member === 'string' ? member : member.name,
-        )
-      : ['You', typeof directName === 'string' ? directName : '']
-    const membersText = members.join(', ')
-
-    messagesByConversation.value[key] = [
-      ...(messagesByConversation.value[key] ?? []),
-      {
-        id: nextMsgId++,
-        sender: 'ZCHAT SYSTEM',
-        text: membersText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
+    const members = conv.type === 'channel'
+      ? (currentChannel.value?.usersList ?? []).map((m) => (typeof m === 'string' ? m : m.name))
+      : ['You', chatName.value]
+    messagesByConversation.value[conv.key] = [
+      ...list,
+      { id: `sys-${sysMsgCounter++}`, sender: 'ZCHAT SYSTEM', text: members.join(', '),
+        time: formatTime(new Date().toISOString()) },
     ]
     text.value = ''
     return
   }
 
-  const msg = {
-    id: nextMsgId++,
-    sender: 'You',
-    text: messageText,
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    avatar: 'https://cdn.quasar.dev/img/avatar4.jpg',
-  }
-  messagesByConversation.value[key] = [...(messagesByConversation.value[key] ?? []), msg]
-  if (route.query.channel === 'Infinity Chat') {
-    $q.notify({
-      icon: 'notifications',
-      position: 'bottom-right',
-      message: `${msg.sender} have sent: ${messageText.length < 20 ? messageText : `${messageText.slice(0, 20)}…`}`,
-      color: 'primary',
-      textColor: 'white',
+  try {
+    const res = await fetch(`${API_URL}/chats/${conv.id}/messages`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: conv.type, content: messageText }),
     })
+    if (!res.ok) throw new Error(`send ${res.status}`)
+    const { message } = await res.json()
+    messagesByConversation.value[conv.key] = [...list, mapMessage(message)]
+    text.value = ''
+  } catch (e) {
+    console.error(e)
+    $q.notify({ type: 'negative', message: 'Message was not sent' })
   }
-  text.value = ''
 }
 
 const commandInfo = {
@@ -706,23 +362,6 @@ function messageParts(message) {
         knownNicknames.includes(text.slice(1).toLowerCase()),
     }))
 }
-
-function onLoad(_index, done) {
-  setTimeout(() => {
-    const totalMessages = allMsgs.value.length
-
-    if (visibleMessageCount.value >= totalMessages) {
-      done(true)
-      return
-    }
-
-    visibleMessageCount.value = Math.min(visibleMessageCount.value + 10, totalMessages)
-    nextTick(() => {
-      done(visibleMessageCount.value >= allMsgs.value.length)
-    })
-  }, 2000)
-}
-
 </script>
 
 <style scoped>

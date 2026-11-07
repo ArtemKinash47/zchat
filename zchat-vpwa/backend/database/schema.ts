@@ -33,7 +33,7 @@ export class AuthAccessTokenSchema extends BaseModel {
 }
 
 export class ChannelUserSchema extends BaseModel {
-  static $columns = ['channelId', 'createdAt', 'id', 'updatedAt', 'userId'] as const
+  static $columns = ['channelId', 'createdAt', 'id', 'isAdmin', 'updatedAt', 'userId'] as const
   $columns = ChannelUserSchema.$columns
   @column()
   declare channelId: number
@@ -41,6 +41,8 @@ export class ChannelUserSchema extends BaseModel {
   declare createdAt: DateTime | null
   @column({ isPrimary: true })
   declare id: number
+  @column()
+  declare isAdmin: boolean
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
@@ -48,23 +50,44 @@ export class ChannelUserSchema extends BaseModel {
 }
 
 export class ChannelSchema extends BaseModel {
-  static $columns = ['createdAt', 'id', 'name', 'updatedAt'] as const
+  static $columns = ['createdAt', 'id', 'isPrivate', 'name', 'updatedAt'] as const
   $columns = ChannelSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime | null
   @column({ isPrimary: true })
   declare id: number
   @column()
+  declare isPrivate: boolean
+  @column()
   declare name: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }
 
+export class DirectChatSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'new', 'updatedAt', 'userId1', 'userId2'] as const
+  $columns = DirectChatSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare new: boolean | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId1: number
+  @column()
+  declare userId2: number
+}
+
 export class MessageSchema extends BaseModel {
-  static $columns = ['channelId', 'content', 'createdAt', 'createdBy', 'id', 'updatedAt'] as const
+  static $columns = ['channelId', 'chatType', 'content', 'createdAt', 'createdBy', 'id', 'updatedAt'] as const
   $columns = MessageSchema.$columns
   @column()
   declare channelId: number
+  @column()
+  declare chatType: boolean | null
   @column()
   declare content: string
   @column.dateTime({ autoCreate: true })

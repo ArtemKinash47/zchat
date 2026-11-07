@@ -251,6 +251,9 @@ import ChannelLink from '@/components/ChannelLink.vue'
 import MyProfile from '@/components/MyProfile.vue'
 import Settings from '@/components/Settings.vue'
 import { knownNicknames } from '@/knownNicknames.js'
+import { onMounted } from 'vue'
+import { useQuasar } from 'quasar'
+const $q = useQuasar()
 
 const router = useRouter()
 const text_200 = ref('')
@@ -258,6 +261,33 @@ const text_300 = ref('')
 const dense = ref(false)
 const text_400 = ref('')
 const selectedChannelMembers = ref([])
+const chatLinks = ref([])
+const channelLinks = ref([])
+
+async function loadChats() {
+  const token = localStorage.getItem('token')
+  console.log('token:', token)
+
+  try {
+    const res = await fetch('http://localhost:3333/api/v1/account/chats', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    })
+    console.log('status:', res.status)
+    const data = await res.json()
+    console.log('data:', data)
+    if (!res.ok) return
+
+    chatLinks.value = data.directChats.map((c) => ({
+      ...c,
+      avatar: c.avatar ?? getAvatarUrl(c.nickname ?? c.name),
+    }))
+    channelLinks.value = data.channels
+  } catch (e) {
+    console.error('loadChats failed:', e)
+  }
+}
+
+onMounted(loadChats)
 
 const options_fill = ref(knownNicknames)
 
@@ -311,35 +341,46 @@ function removeChannelMember (nickname) {
   )
 }
 
-function addChat() {
+async function addChat() {
   const nickname = text_200.value.trim().replace(/^@/, '')
   if (!nickname) return
 
   const routeName = nickname.toLowerCase()
-  const existingChat = chatLinks.value.find(({ name, hasNickname, nickname: savedNickname }) => {
-    const existingRouteName = hasNickname
-      ? (savedNickname || name).trim().replace(/^@/, '')
-      : name.trim()
-    return existingRouteName.toLowerCase() === routeName
-  })
-  const chat = existingChat ?? {
-    name: nickname,
-    hasNickname: true,
-    nickname: `@${nickname}`,
-    avatar: getAvatarUrl(nickname),
-    isOnline: 0,
-    unreadCount: 0,
-    new: true,
-  }
+  let chat = chatLinks.value.find(({ name, nickname: savedNickname }) =>
+    [name, savedNickname].some(
+      (id) => typeof id === 'string' && id.trim().replace(/^@/, '').toLowerCase() === routeName,
+    ),
+  )
 
-  if (!existingChat) chatLinks.value.push(chat)
+  if (!chat) {
+    try {
+      const res = await fetch('http://localhost:3333/api/v1/account/chats/direct', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ nickname }),
+      })
+      const body = await res.json()
+      if (!res.ok) {
+        $q.notify({ type: 'negative', message: body.message || 'Could not create chat' })
+        return
+      }
+      chat = { ...body.chat, avatar: body.chat.avatar ?? getAvatarUrl(body.chat.nickname ?? body.chat.name) }
+      chatLinks.value.push(chat)
+    } catch (e) {
+      console.error(e)
+      $q.notify({ type: 'negative', message: 'Server is not reachable' })
+      return
+    }
+  }
 
   tab.value = 'Direct Messages'
   addChatOpen.value = false
   text_200.value = ''
-  router.push({ path: '/', query: { name: routeName } })
+  router.push({ path: '/', query: { name: (chat.nickname ?? chat.name).replace(/^@/, '').toLowerCase() } })
 }
-
 function createChannel() {
   const name = text_300.value.trim()
   if (!name) return
@@ -382,74 +423,13 @@ function createChannel() {
 }
 
 const tab = ref('Direct Messages')
-const chatLinks = ref([
-  {
-    name: 'Alex Morgan',
-    hasNickname: true,
-    nickname: 'alexmorgan',
-    avatar: 'https://cdn.quasar.dev/img/avatar.png',
-    isOnline: 1,
-    unreadCount: 3,
-    new: false, 
-  },
-  {
-    name: 'Den Verstappen',
-    hasNickname: true,
-    nickname: 'KuniLina',
-    avatar: 'https://img.redbull.com/images/c_crop,x_914,y_1637,h_3171,w_3171/c_fill,g_auto,w_308,h_308/q_auto:low,f_auto/redbullcom/2022/5/5/esxtfazwc5k0xntwv20i/max-verstappen-profile-pic',
-    isOnline: -1,
-    unreadCount: 0,
-    new: false, 
-  },
-  {
-    name: 'Leybron Jahames',
-    hasNickname: true,
-    nickname: 'LeybronJahames',
-    avatar: 'https://cdn.nba.com/headshots/nba/latest/1040x760/2544.png',
-    isOnline: 0,
-    unreadCount: 0,
-    new: true, 
-  },
-])
+
 
 const sortedChatLinks = computed(() =>
   [...chatLinks.value].sort((first, second) => Number(second.new) - Number(first.new)),
 )
 
-const channelLinks = ref([
-  {
-    name: 'Design Team',
-    isPrivate: true,
-    unreadCount: 3,
-    onlineCount: 5,
-    new: false, 
-    usersList: [
-      { name: 'You', isOnline: 1, admin: true },
-      { name: 'Alex Morgan', isOnline: 1, admin: false },
-      { name: 'Den Verstappen', isOnline: -1, admin: false },
-    ],
-  },
-  {
-    name: 'Infinity Chat',
-    isPrivate: false,
-    unreadCount: 0,
-    onlineCount: 0,
-    new: false, 
-    usersList: [
-      { name: 'You', isOnline: 1, admin: true },
-      { name: 'Den Verstappen', isOnline: -1, admin: false },
-      { name: 'Leybron Jahames', isOnline: 0, admin: false },
-      { name: 'Leybron Jahames', isOnline: 0, admin: false },
-      { name: 'Leybron Jahames', isOnline: 0, admin: false },
-      { name: 'Leybron Jahames', isOnline: 0, admin: false },
-      { name: 'Leybron Jahames', isOnline: 0, admin: false },
-      { name: 'Leybron Jahames', isOnline: 0, admin: false },
-      { name: 'Leybron Jahames', isOnline: 0, admin: false },
-      { name: 'Leybron Jahames', isOnline: 0, admin: false },
-      { name: 'Leybron Jahames', isOnline: 0, admin: false },
-    ],
-  },
-])
+
 
 const sortedChannelLinks = computed(() =>
   [...channelLinks.value].sort((first, second) => Number(second.new) - Number(first.new)),

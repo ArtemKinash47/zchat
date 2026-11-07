@@ -21,9 +21,6 @@ export default class extends BaseSchema {
         .integer('channel_id')
         .unsigned()
         .notNullable()
-        .references('id')
-        .inTable('channels')
-        .onDelete('CASCADE')
       table.text('content').notNullable()
     })
   }

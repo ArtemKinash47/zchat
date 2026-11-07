@@ -35,6 +35,7 @@ export default class User extends compose(
     pivotForeignKey: 'user_id',
     pivotRelatedForeignKey: 'channel_id',
     pivotTimestamps: true,
+    pivotColumns: ['is_admin'],
   })
   declare channels: ManyToMany<typeof Channel>
 }
