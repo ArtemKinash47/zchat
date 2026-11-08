@@ -20,6 +20,42 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"auth"],[0,"login"]],
     types: placeholder as Registry['auth.access_tokens.store']['types'],
   },
+  'profile.chats.store_direct': {
+    methods: ["POST"],
+    pattern: '/api/v1/account/chats/direct',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"chats"],[0,"direct"]],
+    types: placeholder as Registry['profile.chats.store_direct']['types'],
+  },
+  'profile.chats.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/account/chats',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"chats"]],
+    types: placeholder as Registry['profile.chats.index']['types'],
+  },
+  'profile.chats.search_users': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/account/users',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"users"]],
+    types: placeholder as Registry['profile.chats.search_users']['types'],
+  },
+  'profile.chats.store_channel': {
+    methods: ["POST"],
+    pattern: '/api/v1/account/channels',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"channels"]],
+    types: placeholder as Registry['profile.chats.store_channel']['types'],
+  },
+  'profile.messages.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/account/chats/:id/messages',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"chats"],[1,"id"],[0,"messages"]],
+    types: placeholder as Registry['profile.messages.index']['types'],
+  },
+  'profile.messages.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/account/chats/:id/messages',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"chats"],[1,"id"],[0,"messages"]],
+    types: placeholder as Registry['profile.messages.store']['types'],
+  },
   'profile.profile.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/account/profile',

@@ -6,18 +6,33 @@ export type ScannedRoutes = {
   ALL: {
     'auth.new_account.store': { paramsTuple?: []; params?: {} }
     'auth.access_tokens.store': { paramsTuple?: []; params?: {} }
+    'profile.chats.store_direct': { paramsTuple?: []; params?: {} }
+    'profile.chats.index': { paramsTuple?: []; params?: {} }
+    'profile.chats.search_users': { paramsTuple?: []; params?: {} }
+    'profile.chats.store_channel': { paramsTuple?: []; params?: {} }
+    'profile.messages.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'profile.messages.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
   }
   GET: {
+    'profile.chats.index': { paramsTuple?: []; params?: {} }
+    'profile.chats.search_users': { paramsTuple?: []; params?: {} }
+    'profile.messages.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
   }
   HEAD: {
+    'profile.chats.index': { paramsTuple?: []; params?: {} }
+    'profile.chats.search_users': { paramsTuple?: []; params?: {} }
+    'profile.messages.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
   }
   POST: {
     'auth.new_account.store': { paramsTuple?: []; params?: {} }
     'auth.access_tokens.store': { paramsTuple?: []; params?: {} }
+    'profile.chats.store_direct': { paramsTuple?: []; params?: {} }
+    'profile.chats.store_channel': { paramsTuple?: []; params?: {} }
+    'profile.messages.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
   }
 }

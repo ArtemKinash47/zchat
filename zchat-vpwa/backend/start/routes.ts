@@ -28,6 +28,8 @@ router
       .group(() => {
         router.post('chats/direct', '#controllers/chats_controller.storeDirect')
         router.get('chats', '#controllers/chats_controller.index')
+        router.get('users', '#controllers/chats_controller.searchUsers')
+        router.post('channels', '#controllers/chats_controller.storeChannel')
         router.get('chats/:id/messages', '#controllers/messages_controller.index')
         router.post('chats/:id/messages', '#controllers/messages_controller.store')
         router.get('profile', [controllers.Profile, 'show'])
@@ -36,5 +38,5 @@ router
       .prefix('account')
       .as('profile')
       .use(middleware.auth({ guards: ['api'] }))
-      })
+  })
   .prefix('/api/v1')

@@ -11,6 +11,16 @@ export interface ApiDefinition {
     }
   }
   profile: {
+    chats: {
+      storeDirect: typeof routes['profile.chats.store_direct']
+      index: typeof routes['profile.chats.index']
+      searchUsers: typeof routes['profile.chats.search_users']
+      storeChannel: typeof routes['profile.chats.store_channel']
+    }
+    messages: {
+      index: typeof routes['profile.messages.index']
+      store: typeof routes['profile.messages.store']
+    }
     profile: {
       show: typeof routes['profile.profile.show']
     }
