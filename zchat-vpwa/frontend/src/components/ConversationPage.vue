@@ -65,11 +65,11 @@
         <span>You are typing...</span>
       </div>
       <q-list
-        v-if="text === '/' && !commandSelected"
+        v-if="text.startsWith('/') && !commandSelected"
         class="command-list text-subtitle2 text-grey-7"
       >
         <Commands
-          v-for="(info, command) in commandInfo"
+          v-for="(info, command) in filCommandInfo"
           :key="command"
           :name="command"
           :info="info"
@@ -109,7 +109,7 @@
 <script setup>
 import { computed, inject, nextTick, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Commands from './Commands.vue'
 import ChatInfo from './ChatInfo.vue'
 import { knownNicknames } from '@/knownNicknames.js'
@@ -123,6 +123,7 @@ const chatLinks = inject('chatLinks', ref([]))
 const messagesScrollArea = ref(null)
 const messageHistory = ref(null)
 const ChatInfoOpen = ref(false)
+const router = useRouter()
 
 function scrollMessagesToBottom() {
   nextTick(() => {
@@ -320,6 +321,118 @@ async function sendMessage() {
     return
   }
 
+  if (messageText == '/quit'){
+    if (conv.type !== 'channel' || !currentChannel.value) {
+      $q.notify({ type: 'warning', message: 'you can leave from a channel' })
+      return
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/channels/${conv.id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      const body = await res.json()
+
+      if(!res.ok) {
+        throw new Error(body.errors?.[0]?.message || body.message || `could not close/delete channel -> ${res.status}`)
+      }
+
+      channelLinks.value = channelLinks.value.filter((channel) => channel.id !== conv.id)
+      await router.push({ path: '/' })
+      $q.notify({ type: 'positive', message: 'Channel closed' })
+      text.value = ''
+    } catch (error) {
+      console.error('channel failed to close/delete :', error)
+      $q.notify({ type: 'negative', message: error.message })
+    }
+    return
+  }
+
+  if (messageText == '/cancel'){
+    if (conv.type !== 'channel' || !currentChannel.value) {
+      $q.notify({ type: 'warning', message: 'you can leave from a channel' })
+      return
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/channels/${conv.id}/cancelsub`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      const body = await res.json()
+
+      if(!res.ok) {
+        throw new Error(body.errors?.[0]?.message || body.message || `could not close/delete channel -> ${res.status}`)
+      }
+
+      channelLinks.value = channelLinks.value.filter((channel) => channel.id !== conv.id)
+      await router.push({ path: '/' })
+      $q.notify({ type: 'positive', message: body.message === 'chanel deleted successfully' ? 'channel closed(deleted)' : 'you left the channel' })
+      text.value = ''
+    } catch (error) {
+      console.error('channel failed to close/delete :', error)
+      $q.notify({ type: 'negative', message: error.message })
+    }
+    return
+  }
+
+  const messageParts = messageText.split(/\s+/)
+  if (messageParts[0] === '/invite') {
+    if (messageParts.length !== 2 || !messageParts[1].replace(/^@/, '')) {
+      $q.notify({ type: 'warning', message: 'Usage of command: "/invite nickname"' })
+      return
+    }
+
+    const nickname = messageParts[1].replace(/^@/, '')
+
+    if (conv.type !== 'channel' || !currentChannel.value) {
+      $q.notify({ type: 'warning', message: 'You can only invite users to a channel' })
+      return
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/channels/${conv.id}/members`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname }),
+      })
+
+      const body = await res.json()
+
+      if (!res.ok) {
+        throw new Error(
+          body.errors?.[0]?.message || body.message || `invite failed (${res.status})`,
+        )
+      }
+
+      const member = body.member
+      const channel = currentChannel.value
+      
+      channel.usersList ??= []
+
+      if (!channel.usersList.some((existing) => existing.id === member.id)) {
+        channel.usersList.push(member)
+      }
+
+      messagesByConversation.value[conv.key] = [
+        ...list,
+        {
+          id: `sys-${sysMsgCounter++}`,
+          sender: 'ZCHAT SYSTEM',
+          text: `${member.name} was added to the channel ${channel.name}`,
+          time: formatTime(new Date().toISOString()),
+        },
+      ]
+      text.value = ''
+    } catch (error) {
+      console.error('Invite failed:', error)
+      $q.notify({ type: 'negative', message: error.message })
+    }
+
+    return
+  }
+
   try {
     const res = await fetch(`${API_URL}/chats/${conv.id}/messages`, {
       method: 'POST',
@@ -362,6 +475,16 @@ function messageParts(message) {
         knownNicknames.includes(text.slice(1).toLowerCase()),
     }))
 }
+
+const filCommandInfo = computed(() => {
+  const typedCommand = text.value.trim().split(/\s+/)[0].toLowerCase()
+
+  return Object.fromEntries(
+    Object.entries(commandInfo).filter(([command]) =>
+      command.split(' ')[0].toLowerCase().startsWith(typedCommand),
+    ),
+  )
+})
 </script>
 
 <style scoped>

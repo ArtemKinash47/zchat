@@ -201,7 +201,6 @@
                   @click="addChannelMember"
                 />
               </template>
-              
             </q-select>
             <div class="channel-members-scroll q-pa-md">
                 <div class="channel-members">
@@ -250,7 +249,6 @@ import ChatLink from '@/components/ChatLink.vue'
 import ChannelLink from '@/components/ChannelLink.vue'
 import MyProfile from '@/components/MyProfile.vue'
 import Settings from '@/components/Settings.vue'
-import { knownNicknames } from '@/knownNicknames.js'
 import { onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 const $q = useQuasar()
@@ -289,21 +287,57 @@ async function loadChats() {
 
 onMounted(loadChats)
 
-const options_fill = ref(knownNicknames)
+const options_fill = ref([])
+let userSearchRequest = 0
 
-function filterFn (val, update) {
-  update(() => {
-    const needle = val.trim().toLowerCase()
+async function filterFn(val, update) {
+  const search = val.trim()
+  const requestId = ++userSearchRequest
 
-    if (needle === '') {
+  if (!search) {
+    update(() => {
       options_fill.value = []
-      return
+    })
+    return
+  }
+
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('You are signed out. Sign in again to search users.')
     }
 
-    options_fill.value = knownNicknames
-      .filter(v => v.toLowerCase().includes(needle))
-      .slice(0, 50)
-  })
+    const res = await fetch(
+      `http://localhost:3333/api/v1/account/users?search=${encodeURIComponent(search)}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    const body = await res.json()
+    if (res.status === 401) {
+      throw new Error('Your session expired. Sign in again to search users.')
+    }
+    if (!res.ok) {
+      throw new Error(body.errors?.[0]?.message || body.message || `User search failed (${res.status})`)
+    }
+
+    if (requestId === userSearchRequest) {
+      update(() => {
+        options_fill.value = body.nicknames
+      })
+    }
+  } catch (e) {
+    console.error('User search failed:', e)
+    if (requestId === userSearchRequest) {
+      update(() => {
+        options_fill.value = []
+      })
+      $q.notify({
+        type: 'negative',
+        message: e instanceof TypeError
+          ? 'Could not connect to the server. Check that the backend is running.'
+          : e.message,
+      })
+    }
+  }
 }
 
 function setModel (val) {
@@ -315,10 +349,8 @@ function setChatInput(val) {
 }
 
 function getAvatarUrl(nickname) {
-  const nicknameIndex = knownNicknames.findIndex(
-    (knownNickname) => knownNickname.toLowerCase() === nickname.toLowerCase(),
-  )
-  return `https://cdn.quasar.dev/img/avatar${(Math.max(nicknameIndex, 0) % 6) + 1}.jpg`
+  const hash = [...nickname.toLowerCase()].reduce((value, character) => value + character.charCodeAt(0), 0)
+  return `https://cdn.quasar.dev/img/avatar${(hash % 6) + 1}.jpg`
 }
 
 function addChannelMember () {
@@ -381,7 +413,8 @@ async function addChat() {
   text_200.value = ''
   router.push({ path: '/', query: { name: (chat.nickname ?? chat.name).replace(/^@/, '').toLowerCase() } })
 }
-function createChannel() {
+
+async function createChannel() {
   const name = text_300.value.trim()
   if (!name) return
 
@@ -389,47 +422,62 @@ function createChannel() {
   const existingChannel = channelLinks.value.find(
     (channel) => channel.name.trim().toLowerCase() === routeName,
   )
-  if (existingChannel) {
+  if (existingChannel?.id) {
     tab.value = 'Channels'
     addChatOpen.value = false
     router.push({ path: '/', query: { channel: existingChannel.name } })
     return
   }
 
-  const usersList = [
-    { name: 'You', isOnline: 1, admin: true },
-    ...selectedChannelMembers.value.map(({ nickname }) => ({
-      name: nickname,
-      isOnline: 0,
-      admin: false,
-    })),
-  ]
-  channelLinks.value.push({
-    name,
-    isPrivate: group.value === 'private',
-    unreadCount: 0,
-    onlineCount: 1,
-    new: true,
-    usersList,
-  })
+  const token = localStorage.getItem('token')
+  if (!token) {
+    $q.notify({ type: 'negative', message: 'Sign in again to create a channel' })
+    return
+  }
 
-  tab.value = 'Channels'
-  addChatOpen.value = false
-  text_300.value = ''
-  text_400.value = ''
-  selectedChannelMembers.value = []
-  group.value = 'public'
-  router.push({ path: '/', query: { channel: name } })
+  try {
+    const res = await fetch('http://localhost:3333/api/v1/account/channels', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name,
+        isPrivate: group.value === 'private',
+        members: selectedChannelMembers.value.map(({ nickname }) => nickname),
+      }),
+    })
+    const body = await res.json()
+    if (!res.ok) {
+      throw new Error(body.errors?.[0]?.message || body.message || 'Could not create channel')
+    }
+
+    const channel = body.channel
+    channelLinks.value.push(channel)
+    tab.value = 'Channels'
+    addChatOpen.value = false
+    text_300.value = ''
+    text_400.value = ''
+    selectedChannelMembers.value = []
+    group.value = 'public'
+    router.push({ path: '/', query: { channel: channel.name } })
+  } catch (error) {
+    console.error('Create channel failed:', error)
+    $q.notify({
+      type: 'negative',
+      message: error instanceof TypeError
+        ? 'Could not connect to the server. Check that the backend is running.'
+        : error.message,
+    })
+  }
 }
 
 const tab = ref('Direct Messages')
 
-
 const sortedChatLinks = computed(() =>
   [...chatLinks.value].sort((first, second) => Number(second.new) - Number(first.new)),
 )
-
-
 
 const sortedChannelLinks = computed(() =>
   [...channelLinks.value].sort((first, second) => Number(second.new) - Number(first.new)),
@@ -471,6 +519,7 @@ const options = [
   { label: 'Public',value: 'public', color: 'positive'},
   { label: 'Private',value: 'private', color: 'negative' },
 ]
+
 </script>
 
 <style scoped>
@@ -516,5 +565,4 @@ const options = [
   overflow: hidden;
   box-shadow: 0 12px 32px rgb(0 0 0 / 20%);
 }
-
 </style>
