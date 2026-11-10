@@ -86,6 +86,19 @@ export interface Registry {
       rawResponse: ExtractRawResponse<unknown>
     }
   }
+  'profile.chats.add_channel_member': {
+    methods: ["POST"]
+    pattern: '/api/v1/account/channels/:id/members'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: unknown
+      errorResponse: unknown
+      rawResponse: ExtractRawResponse<unknown>
+    }
+  }
   'profile.messages.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/account/chats/:id/messages'
@@ -102,6 +115,45 @@ export interface Registry {
   'profile.messages.store': {
     methods: ["POST"]
     pattern: '/api/v1/account/chats/:id/messages'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: unknown
+      errorResponse: unknown
+      rawResponse: ExtractRawResponse<unknown>
+    }
+  }
+  'profile.chats.destroy_channel': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/account/channels/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: unknown
+      errorResponse: unknown
+      rawResponse: ExtractRawResponse<unknown>
+    }
+  }
+  'profile.chats.cancel_sub': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/account/channels/:id/cancelsub'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: unknown
+      errorResponse: unknown
+      rawResponse: ExtractRawResponse<unknown>
+    }
+  }
+  'profile.chats.revoke_user': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/account/channels/:id/members'
     types: {
       body: {}
       paramsTuple: [ParamValue]

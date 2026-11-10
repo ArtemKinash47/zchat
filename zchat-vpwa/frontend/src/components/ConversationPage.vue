@@ -259,10 +259,10 @@ function formatTime(iso) {
 function mapMessage(m) {
   return {
     id: m.id,
-    sender: m.mine ? 'You' : m.sender,
+    sender: m.isSystem ? 'ZCHAT SYSTEM' : m.mine ? 'You' : m.sender,
     text: m.content,
     time: formatTime(m.createdAt),
-    avatar: m.mine ? MY_AVATAR : undefined,
+    avatar: m.mine && !m.isSystem ? MY_AVATAR : undefined,
   }
 }
 
@@ -378,6 +378,56 @@ async function sendMessage() {
   }
 
   const messageParts = messageText.split(/\s+/)
+
+  if(messageParts[0] === '/revoke') {
+    if (messageParts.length !== 2 || !messageParts[1].replace(/^@/, '')) {
+      $q.notify({ type: 'warning', message: 'Usage of command: "/revoke nickname"' })
+      return
+    }
+
+    const nickname = messageParts[1].replace(/^@/, '')
+
+    if (conv.type !== 'channel' || !currentChannel.value) {
+      $q.notify({ type: 'warning', message: 'You can only revoke users as an admin in a channel' })
+      return
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/channels/${conv.id}/members`, {
+        method: 'DELETE',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname }),
+      })
+
+      const body = await res.json()
+
+      if (!res.ok) {
+        throw new Error(
+          body.errors?.[0]?.message || body.message || `deletion failed (${res.status})`,
+        )
+      }
+
+      const member = body.member
+      const channel = currentChannel.value
+      
+      channel.usersList ??= []
+
+      channel.usersList = channel.usersList.filter((existing) => existing.id !== member.id)
+
+      messagesByConversation.value[conv.key] = [
+        ...list,
+        mapMessage(body.systemMessage),
+      ]
+      text.value = ''
+    } catch (error) {
+      console.error('Deletion failed:', error)
+      $q.notify({ type: 'negative', message: error.message })
+    }
+
+    return
+  }
+
+
   if (messageParts[0] === '/invite') {
     if (messageParts.length !== 2 || !messageParts[1].replace(/^@/, '')) {
       $q.notify({ type: 'warning', message: 'Usage of command: "/invite nickname"' })
@@ -417,12 +467,7 @@ async function sendMessage() {
 
       messagesByConversation.value[conv.key] = [
         ...list,
-        {
-          id: `sys-${sysMsgCounter++}`,
-          sender: 'ZCHAT SYSTEM',
-          text: `${member.name} was added to the channel ${channel.name}`,
-          time: formatTime(new Date().toISOString()),
-        },
+        mapMessage(body.systemMessage),
       ]
       text.value = ''
     } catch (error) {

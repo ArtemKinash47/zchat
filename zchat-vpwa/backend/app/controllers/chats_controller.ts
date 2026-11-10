@@ -3,6 +3,7 @@ import db from '@adonisjs/lucid/services/db'
 import DirectChat from '#models/direct_chat'
 import User from '#models/user'
 import Channel from '#models/channel'
+import Message from '#models/message'
 
 export default class ChatsController {
   async index({ auth }: HttpContext) {
@@ -176,4 +177,205 @@ export default class ChatsController {
       },
     }
   }
+  async addChannelMember({auth, params, request, response}: HttpContext){
+    const user = auth.use('api').getUserOrFail()
+    const channelId = Number(params.id)
+    const nickname = String(request.input('nickname', '')).trim().replace(/^@/, '')
+
+    if (!Number.isInteger(channelId) || channelId <= 0){
+      return response.badRequest({message: 'invalid channel id'})
+    }
+
+    if (!nickname) {
+      return response.badRequest({message: 'no nickname, nickname is required'})
+    }
+
+    const channel = await Channel.find(channelId)
+    if(!channel) return response.badRequest({message: 'no channel found'})
+
+    const inviterMembership = await db.from('channel_users').where('channel_id', channelId).where('user_id', user.id).first()
+
+    if (!inviterMembership) return response.forbidden({message: 'must be a channel member to invite another user'})
+    if (channel.isPrivate && !inviterMembership.is_admin) return response.forbidden({message: 'only admins can invite another user'})
+
+    const newUser = await User.query().whereRaw('LOWER(nickname) = ?', [nickname.toLowerCase()]).first()
+
+    if (!newUser) return response.notFound({message: 'user not found'})
+
+    const existingMembership = await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', newUser.id)
+      .first()
+
+    if (existingMembership) {
+      return response.conflict({ message: 'User is already a channel member' })
+    }
+
+    await db.table('channel_users').insert({ channel_id: channelId, user_id: newUser.id, is_admin: false,})
+    const systemMessage = await Message.create({
+      channelId,
+      chatType: false,
+      content: `${newUser.nickname ?? newUser.email} was added to the channel ${channel.name}`,
+      createdBy: user.id,
+      isSystem: true,
+    })
+
+    return {
+      member: {
+        id: newUser.id,
+        name: newUser.nickname ?? newUser.email,
+        isOnline: 0,
+        admin: false,
+      },
+      systemMessage: {
+        id: systemMessage.id,
+        content: systemMessage.content,
+        createdAt: systemMessage.createdAt?.toISO(),
+        mine: false,
+        sender: 'ZCHAT SYSTEM',
+        isSystem: true,
+      }
+    }
+  }
+
+  async revokeUser({ auth, response, params, request}: HttpContext){
+    const user = auth.use('api').getUserOrFail()
+    const channelId = Number(params.id)
+    const nickname = String(request.input('nickname', '')).trim().replace(/^@/, '')
+
+    if (!Number.isInteger(channelId) || channelId <= 0){
+      return response.badRequest({message: 'invalid channel id'})
+    }
+
+    if (!nickname) {
+      return response.badRequest({message: 'no nickname, nickname is required'})
+    }
+
+    const channel = await Channel.find(channelId)
+    if(!channel) return response.badRequest({message: 'no channel found'})
+
+    const isAdminInChannelCheck = await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', user.id)
+      .first()
+
+    if (!isAdminInChannelCheck?.is_admin) {
+      return response.forbidden({ message: 'only channel admins can revoke members' })
+    }
+
+     const target = await User.query()
+      .whereRaw('LOWER(nickname) = ?', [nickname.toLowerCase()])
+      .first()
+
+    if (!target) {
+      return response.notFound({ message: 'user not found' })
+    }
+    if (target.id === user.id) {
+      return response.badRequest({ message: 'use /cancel to delete/leave your own channel' })
+    }
+
+    const targetUser = await db.from('channel_users').where('channel_id', channelId).where('user_id', target.id).first()
+
+    if (!targetUser) return response.notFound({message: 'user has not been found'})
+
+    await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', target.id)
+      .delete()
+
+    const systemMessage = await db.transaction(async (trx) => {
+      await trx
+        .from('channel_users')
+        .where('channel_id', channelId)
+        .where('user_id', target.id)
+        .delete()
+
+      return Message.create(
+        {
+          channelId,
+          chatType: false,
+          content: `${target.nickname ?? target.email} was removed from the channel ${channel.name}`,
+          createdBy: user.id,
+          isSystem: true,
+        },
+        { client: trx },
+      )
+    })
+
+    return {
+      member: {
+        id: target.id,
+        name: target.nickname ?? target.email,
+      },
+      systemMessage: {
+        id: systemMessage.id,
+        content: systemMessage.content,
+        createdAt: systemMessage.createdAt?.toISO(),
+        mine: false,
+        sender: 'ZCHAT SYSTEM',
+        isSystem: true,
+      },
+  }
+}
+
+  async destroyChannel({ auth, response, params }: HttpContext){
+    const user = auth.use('api').getUserOrFail()
+    const channelId = Number(params.id)
+
+    if (!Number.isInteger(channelId) || channelId <= 0) return response.badRequest({message: 'invalid channel id'})
+    
+    const channel = await Channel.find(channelId)
+    if (!channel) return response.notFound({message: 'channel is not found'})
+
+    const isInChat = await db.from('channel_users').where('channel_id', channelId).where('user_id', user.id).first()
+
+    if(!isInChat || !isInChat.is_admin) {
+      return response.forbidden({message: 'only admins can delete channel'})
+    }
+
+    await db.transaction(async (trx) => {
+      await trx.from('messages').where('channel_id', channelId).where('chat_type', false).delete()
+      await trx.from('channel_users').where('channel_id', channelId).delete()
+      await trx.from('channels').where('id', channelId).delete()
+    })
+
+    return {message: 'channel closed/deleted successfully'}
+  }
+
+  async cancelSub ({auth, response, params}: HttpContext) {
+    const user = auth.use('api').getUserOrFail()
+    const channelId = Number(params.id)
+
+    if (!Number.isInteger(channelId) || channelId <= 0) return response.badRequest({message: 'invalid channel id'})
+    
+    const channel = await Channel.find(channelId)
+    if (!channel) return response.notFound({message: 'channel is not found'})
+
+    const sub = await db.from('channel_users').where('user_id', user.id).where('channel_id', channelId).first()
+    if(!sub) return response.forbidden({message: 'you are not a member'})
+
+    if (sub.is_admin) {
+      await db.transaction(async (trx) => {
+        await trx
+          .from('messages')
+          .where('channel_id', channelId)
+          .where('chat_type', false)
+          .delete()
+
+        await trx.from('channel_users').where('channel_id', channelId).delete()
+        await trx.from('channels').where('id', channelId).delete()
+      })
+
+      return {message: 'channel deleted successfully'}
+    }
+
+    await db.from('channel_users').where('channel_id', channelId).where('user_id', user.id).delete()
+
+    return {message: 'you left the channel'}
+  }
+
+
 }

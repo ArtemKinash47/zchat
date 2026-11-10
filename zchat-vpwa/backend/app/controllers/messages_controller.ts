@@ -14,13 +14,20 @@ export default class MessagesController {
   }
 
   private toJson(m: Message, meId: number) {
-    const a = m.author
+    const author = m.author
     return {
       id: m.id,
       content: m.content,
       createdAt: m.createdAt?.toISO(),
       mine: m.createdBy === meId,
-      sender: a ? [a.firstName, a.lastName].filter(Boolean).join(' ') || a.nickname || a.email : 'Unknown',
+      sender: m.isSystem
+        ? 'ZCHAT SYSTEM'
+        : author
+          ? [author.firstName, author.lastName].filter(Boolean).join(' ') ||
+            author.nickname ||
+            author.email
+          : 'Unknown',
+      isSystem: m.isSystem,
     }
   }
 

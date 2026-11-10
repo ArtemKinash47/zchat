@@ -44,6 +44,12 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"channels"]],
     types: placeholder as Registry['profile.chats.store_channel']['types'],
   },
+  'profile.chats.add_channel_member': {
+    methods: ["POST"],
+    pattern: '/api/v1/account/channels/:id/members',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"channels"],[1,"id"],[0,"members"]],
+    types: placeholder as Registry['profile.chats.add_channel_member']['types'],
+  },
   'profile.messages.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/account/chats/:id/messages',
@@ -55,6 +61,24 @@ const routes = {
     pattern: '/api/v1/account/chats/:id/messages',
     tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"chats"],[1,"id"],[0,"messages"]],
     types: placeholder as Registry['profile.messages.store']['types'],
+  },
+  'profile.chats.destroy_channel': {
+    methods: ["DELETE"],
+    pattern: '/api/v1/account/channels/:id',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"channels"],[1,"id"]],
+    types: placeholder as Registry['profile.chats.destroy_channel']['types'],
+  },
+  'profile.chats.cancel_sub': {
+    methods: ["DELETE"],
+    pattern: '/api/v1/account/channels/:id/cancelsub',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"channels"],[1,"id"],[0,"cancelsub"]],
+    types: placeholder as Registry['profile.chats.cancel_sub']['types'],
+  },
+  'profile.chats.revoke_user': {
+    methods: ["DELETE"],
+    pattern: '/api/v1/account/channels/:id/members',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"channels"],[1,"id"],[0,"members"]],
+    types: placeholder as Registry['profile.chats.revoke_user']['types'],
   },
   'profile.profile.show': {
     methods: ["GET","HEAD"],

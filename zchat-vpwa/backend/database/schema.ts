@@ -82,7 +82,7 @@ export class DirectChatSchema extends BaseModel {
 }
 
 export class MessageSchema extends BaseModel {
-  static $columns = ['channelId', 'chatType', 'content', 'createdAt', 'createdBy', 'id', 'updatedAt'] as const
+  static $columns = ['channelId', 'chatType', 'content', 'createdAt', 'createdBy', 'id', 'isSystem', 'updatedAt'] as const
   $columns = MessageSchema.$columns
   @column()
   declare channelId: number
@@ -96,6 +96,8 @@ export class MessageSchema extends BaseModel {
   declare createdBy: number
   @column({ isPrimary: true })
   declare id: number
+  @column()
+  declare isSystem: boolean
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }

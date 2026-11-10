@@ -16,6 +16,10 @@ export interface ApiDefinition {
       index: typeof routes['profile.chats.index']
       searchUsers: typeof routes['profile.chats.search_users']
       storeChannel: typeof routes['profile.chats.store_channel']
+      addChannelMember: typeof routes['profile.chats.add_channel_member']
+      destroyChannel: typeof routes['profile.chats.destroy_channel']
+      cancelSub: typeof routes['profile.chats.cancel_sub']
+      revokeUser: typeof routes['profile.chats.revoke_user']
     }
     messages: {
       index: typeof routes['profile.messages.index']
