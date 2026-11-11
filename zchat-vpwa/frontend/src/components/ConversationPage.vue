@@ -28,7 +28,7 @@
             :name="message.sender"
             :stamp="message.time"
             :sent="message.sender === 'You'"
-            :bg-color="message.sender === 'You' ? 'secondary' : message.sender === 'ZCHAT SYSTEM' ? 'info' : 'primary'"
+            :bg-color="message.sender === 'You' ? 'secondary' : message.sender === 'ZCHAT SYSTEM' ? 'info' : message.mentionsMe ? 'accent' : 'primary'"
             :text-color=" message.sender === 'ZCHAT SYSTEM' ? 'warning' : 'white'"
           >
           <template #default>
@@ -102,7 +102,10 @@
     :chat-nickname="chatNickname"
     :chat-avatar="chatAvatar"
     :participants="channelParticipants"
-    @add-member="addChannelMember"
+
+    @add-member="inviteMember"
+    @kick-member="kickMember"
+    @leave="leaveChannel"
   />
 </template>
 
@@ -112,7 +115,6 @@ import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import Commands from './Commands.vue'
 import ChatInfo from './ChatInfo.vue'
-import { knownNicknames } from '@/knownNicknames.js'
 
 const $q = useQuasar()
 const route = useRoute()
@@ -204,30 +206,96 @@ const channelIsPrivate = computed({
     if (currentChannel.value) currentChannel.value.isPrivate = value
   },
 })
-function addChannelMember(name) {
-  const channelName = route.query.channel
-  if (typeof channelName !== 'string' || !channelName) return
 
-  const channel = channelLinks.value.find(({ name }) => name === channelName)
-  if (!channel) return
-
-  const normalizedName = name.trim().toLowerCase()
-  const alreadyMember = (channel.usersList ?? []).some((member) => {
-    const memberName = typeof member === 'string' ? member : member.name
-    return memberName.trim().toLowerCase() === normalizedName
-  })
-  if (alreadyMember) {
-    $q.notify({
-      type: 'warning',
-      message: `${name} is already a channel member.`,
-    })
-    return
-  }
-
-  channel.usersList ??= []
-  channel.usersList.push({ name: name.trim(), isOnline: 0, admin: false })
+function pushMessage(conv, systemMessage) {
+  messagesByConversation.value[conv.key] = [
+    ...(messagesByConversation.value[conv.key] ?? []),
+    mapMessage(systemMessage),
+  ]
 }
+async function kickMember(nickname) {
+  const conv = activeConversation.value
+  if (!conv || conv.type !== 'channel' || !currentChannel.value) {
+    $q.notify({ type: 'warning', message: 'You can only kick users in a channel' })
+    return false
+  }
+  try {
+    const res = await fetch(`${API_URL}/channels/${conv.id}/kick`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname }),
+    })
+    const body = await res.json()
+    if (!res.ok) {
+      throw new Error(body.errors?.[0]?.message || body.message || `kick failed (${res.status})`)
+    }
 
+    const channel = currentChannel.value
+    if (body.banned) {
+      channel.usersList = (channel.usersList ?? []).filter((u) => u.id !== body.member.id)
+    } else {
+      const member = (channel.usersList ?? []).find((u) => u.id === body.member.id)
+      if (member) {
+        member.kickVotes = body.votes
+        member.kickedByMe = true
+      }
+    }
+    pushMessage(conv, body.systemMessage)
+    return true
+  } catch (error) {
+    console.error('Kick failed:', error)
+    $q.notify({ type: 'negative', message: error.message })
+    return false
+  }
+}
+async function inviteMember(nickname) {
+  const conv = activeConversation.value
+  if (!conv || conv.type !== 'channel' || !currentChannel.value) {
+    $q.notify({ type: 'warning', message: 'You can only invite users to a channel' })
+    return false
+  }
+  try {
+    const res = await fetch(`${API_URL}/channels/${conv.id}/members`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname: nickname.replace(/^@/, '') }),
+    })
+    const body = await res.json()
+    if (!res.ok) {
+      throw new Error(body.errors?.[0]?.message || body.message || `invite failed (${res.status})`)
+    }
+
+    const channel = currentChannel.value
+    channel.usersList ??= []
+    if (!channel.usersList.some((u) => u.id === body.member.id)) {
+      channel.usersList.push({ ...body.member, kickVotes: 0, kickedByMe: false, isMe: false })
+    }
+    pushMessage(conv, body.systemMessage)
+    return true
+  } catch (error) {
+    console.error('Invite failed:', error)
+    $q.notify({ type: 'negative', message: error.message })
+    return false
+  }
+}
+async function leaveChannel() {
+  const conv = activeConversation.value
+  if (!conv || conv.type !== 'channel') return
+  try {
+    const res = await fetch(`${API_URL}/channels/${conv.id}/cancelsub`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    })
+    const body = await res.json()
+    if (!res.ok) throw new Error(body.errors?.[0]?.message || body.message || `leave failed (${res.status})`)
+
+    channelLinks.value = channelLinks.value.filter((c) => c.id !== conv.id)
+    await router.push({ path: '/' })
+    $q.notify({ type: 'positive', message: body.message })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.message })
+  }
+}
 const API_URL = 'http://localhost:3333/api/v1/account'
 const PAGE_SIZE = 20
 const MY_AVATAR = 'https://cdn.quasar.dev/img/avatar4.jpg'
@@ -263,6 +331,7 @@ function mapMessage(m) {
     text: m.content,
     time: formatTime(m.createdAt),
     avatar: m.mine && !m.isSystem ? MY_AVATAR : undefined,
+    mentionsMe: Boolean(m.mentionsMe),
   }
 }
 
@@ -426,55 +495,23 @@ async function sendMessage() {
 
     return
   }
-
-
-  if (messageParts[0] === '/invite') {
-    if (messageParts.length !== 2 || !messageParts[1].replace(/^@/, '')) {
-      $q.notify({ type: 'warning', message: 'Usage of command: "/invite nickname"' })
+  if (messageParts[0] === '/join') {
+    const flag = messageParts[2]?.toLowerCase()
+    if (!messageParts[1] || messageParts.length > 3 || (flag && flag !== 'private')) {
+      $q.notify({ type: 'warning', message: 'Usage: "/join channelName [private]"' })
       return
     }
-
-    const nickname = messageParts[1].replace(/^@/, '')
-
-    if (conv.type !== 'channel' || !currentChannel.value) {
-      $q.notify({ type: 'warning', message: 'You can only invite users to a channel' })
+    if (await joinChannel(messageParts[1], flag === 'private')) text.value = ''
+    return
+  }
+  if (messageParts[0] === '/kick' || messageParts[0] === '/invite') {
+    const nickname = (messageParts[1] ?? '').replace(/^@/, '')
+    if (messageParts.length !== 2 || !nickname) {
+      $q.notify({ type: 'warning', message: `Usage of command: "${messageParts[0]} nickname"` })
       return
     }
-
-    try {
-      const res = await fetch(`${API_URL}/channels/${conv.id}/members`, {
-        method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname }),
-      })
-
-      const body = await res.json()
-
-      if (!res.ok) {
-        throw new Error(
-          body.errors?.[0]?.message || body.message || `invite failed (${res.status})`,
-        )
-      }
-
-      const member = body.member
-      const channel = currentChannel.value
-      
-      channel.usersList ??= []
-
-      if (!channel.usersList.some((existing) => existing.id === member.id)) {
-        channel.usersList.push(member)
-      }
-
-      messagesByConversation.value[conv.key] = [
-        ...list,
-        mapMessage(body.systemMessage),
-      ]
-      text.value = ''
-    } catch (error) {
-      console.error('Invite failed:', error)
-      $q.notify({ type: 'negative', message: error.message })
-    }
-
+    const ok = messageParts[0] === '/kick' ? await kickMember(nickname) : await inviteMember(nickname)
+    if (ok) text.value = ''
     return
   }
 
@@ -510,14 +547,16 @@ function pageStyleFn(offset) {
 }
 
 function messageParts(message) {
+  const known = new Set([
+    ...(currentChannel.value?.usersList ?? []).map((u) => u.name.toLowerCase()),
+    chatNickname.value.toLowerCase(),
+  ])
   return message
     .split(/(@[A-Za-z0-9_]+)/g)
     .filter(Boolean)
     .map((text) => ({
       text,
-      isMention:
-        text.startsWith('@') &&
-        knownNicknames.includes(text.slice(1).toLowerCase()),
+      isMention: text.startsWith('@') && known.has(text.slice(1).toLowerCase()),
     }))
 }
 
@@ -530,6 +569,35 @@ const filCommandInfo = computed(() => {
     ),
   )
 })
+async function api(path, method = 'GET', body) {
+  const res = await fetch(`${API_URL}${path}`, {
+    method,
+    headers: { ...authHeaders(), ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+  const data = await res.json()
+  if (!res.ok) {
+    throw new Error(data.errors?.[0]?.message || data.message || `request failed (${res.status})`)
+  }
+  return data
+}
+const upsertChannel = inject('upsertChannel')
+async function joinChannel(name, isPrivate) {
+  try {
+    const body = await api('/channels/join', 'POST', { name, isPrivate })
+    upsertChannel(body.channel)
+    await router.push({ path: '/', query: { channel: body.channel.name } })
+    if (body.systemMessage) pushMessage({ key: `channel:${body.channel.id}` }, body.systemMessage)
+    $q.notify({
+      type: 'positive',
+      message: body.created ? `Channel ${body.channel.name} created` : `Joined ${body.channel.name}`,
+    })
+    return true
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.message })
+    return false
+  }
+}
 </script>
 
 <style scoped>

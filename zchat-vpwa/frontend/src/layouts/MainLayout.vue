@@ -519,6 +519,12 @@ const options = [
   { label: 'Public',value: 'public', color: 'positive'},
   { label: 'Private',value: 'private', color: 'negative' },
 ]
+function upsertChannel(channel) {
+  const existing = channelLinks.value.find((c) => c.id === channel.id)
+  if (existing) Object.assign(existing, channel)
+  else channelLinks.value.push(channel)
+}
+provide('upsertChannel', upsertChannel)
 
 </script>
 

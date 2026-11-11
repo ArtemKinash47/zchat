@@ -20,6 +20,18 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"auth"],[0,"login"]],
     types: placeholder as Registry['auth.access_tokens.store']['types'],
   },
+  'profile.chats.join_channel': {
+    methods: ["POST"],
+    pattern: '/api/v1/account/channels/join',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"channels"],[0,"join"]],
+    types: placeholder as Registry['profile.chats.join_channel']['types'],
+  },
+  'profile.chats.kick_user': {
+    methods: ["POST"],
+    pattern: '/api/v1/account/channels/:id/kick',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"channels"],[1,"id"],[0,"kick"]],
+    types: placeholder as Registry['profile.chats.kick_user']['types'],
+  },
   'profile.chats.store_direct': {
     methods: ["POST"],
     pattern: '/api/v1/account/chats/direct',

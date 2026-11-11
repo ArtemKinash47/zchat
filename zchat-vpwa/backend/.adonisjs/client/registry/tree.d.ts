@@ -12,6 +12,8 @@ export interface ApiDefinition {
   }
   profile: {
     chats: {
+      joinChannel: typeof routes['profile.chats.join_channel']
+      kickUser: typeof routes['profile.chats.kick_user']
       storeDirect: typeof routes['profile.chats.store_direct']
       index: typeof routes['profile.chats.index']
       searchUsers: typeof routes['profile.chats.search_users']

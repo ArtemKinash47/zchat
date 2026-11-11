@@ -9,8 +9,7 @@ export default class ChatsController {
   async index({ auth }: HttpContext) {
     const me = auth.use('api').getUserOrFail()
 
-    await me.load('channels', (q) => q.preload('users'))
-
+    const channels = await me.related('channels').query().wherePivot('is_banned', false)
     const directChats = await DirectChat.query()
       .where('userId1', me.id)
       .orWhere('userId2', me.id)
@@ -31,20 +30,7 @@ export default class ChatsController {
           new: chat.new ?? false,
         }
       }),
-      channels: me.channels.map((channel) => ({
-        id: channel.id,
-        name: channel.name,
-        isPrivate: channel.isPrivate,
-        unreadCount: 0,
-        onlineCount: 0,
-        new: false,
-        usersList: channel.users.map((u) => ({
-          id: u.id,
-          name: u.nickname ?? u.email,
-          isOnline: 0,
-          admin: u.$extras.pivot_is_admin ?? false,
-        })),
-      })),
+      channels: await Promise.all(channels.map((c) => this.channelPayload(c, me))),
     }
   }
   async storeDirect({ auth, request, response }: HttpContext) {
@@ -141,41 +127,14 @@ export default class ChatsController {
     if (members.length !== memberNicknames.length) {
       return response.notFound({ message: 'One or more members were not found' })
     }
-
-    const channel = await db.transaction(async (trx) => {
-      const createdChannel = await Channel.create({ name, isPrivate }, { client: trx })
-
-      await trx.table('channel_users').insert([
-        { channel_id: createdChannel.id, user_id: me.id, is_admin: true },
-        ...members.map((member) => ({
-          channel_id: createdChannel.id,
-          user_id: member.id,
-          is_admin: false,
-        })),
-      ])
-
-      return createdChannel
-    })
-
-    return {
-      channel: {
-        id: channel.id,
-        name: channel.name,
-        isPrivate: channel.isPrivate,
-        unreadCount: 0,
-        onlineCount: 1,
-        new: false,
-        usersList: [
-          { id: me.id, name: me.nickname ?? me.email, isOnline: 1, admin: true },
-          ...members.map((member) => ({
-            id: member.id,
-            name: member.nickname ?? member.email,
-            isOnline: 0,
-            admin: false,
-          })),
-        ],
-      },
-    }
+    const channel = await this.createChannelWithAdmin(
+      name,
+      isPrivate,
+      me.id,
+      members.map((m) => m.id)
+    )
+    return { channel: await this.channelPayload(channel, me) }
+    
   }
   async addChannelMember({auth, params, request, response}: HttpContext){
     const user = auth.use('api').getUserOrFail()
@@ -197,29 +156,42 @@ export default class ChatsController {
 
     if (!inviterMembership) return response.forbidden({message: 'must be a channel member to invite another user'})
     if (channel.isPrivate && !inviterMembership.is_admin) return response.forbidden({message: 'only admins can invite another user'})
-
+    if (inviterMembership.is_banned) {
+      return response.forbidden({ message: 'you are banned from this channel' })
+    }  
     const newUser = await User.query().whereRaw('LOWER(nickname) = ?', [nickname.toLowerCase()]).first()
 
     if (!newUser) return response.notFound({message: 'user not found'})
 
-    const existingMembership = await db
-      .from('channel_users')
-      .where('channel_id', channelId)
-      .where('user_id', newUser.id)
-      .first()
+    const existingMembership = await db.from('channel_users')
+      .where('channel_id', channelId).where('user_id', newUser.id).first()
 
+    let restored = false
     if (existingMembership) {
-      return response.conflict({ message: 'User is already a channel member' })
+      if (!existingMembership.is_banned) {
+        return response.conflict({ message: 'User is already a channel member' })
+      }
+      if (!inviterMembership.is_admin) {
+        return response.forbidden({ message: 'only admins can restore access of a banned user' })
+      }
+      await db.from('channel_users')
+        .where('channel_id', channelId).where('user_id', newUser.id)
+        .update({ is_banned: false })
+      await db.from('kick_directions')
+        .where('channel_id', channelId).where('kicked_id', newUser.id).delete()
+      restored = true
+    } else {
+      await db.table('channel_users').insert({
+        channel_id: channelId, user_id: newUser.id, is_admin: false,
+      })
     }
-
-    await db.table('channel_users').insert({ channel_id: channelId, user_id: newUser.id, is_admin: false,})
-    const systemMessage = await Message.create({
+    const systemMessage = await this.createSystemMessage(
       channelId,
-      chatType: false,
-      content: `${newUser.nickname ?? newUser.email} was added to the channel ${channel.name}`,
-      createdBy: user.id,
-      isSystem: true,
-    })
+      restored
+        ? `${newUser.nickname ?? newUser.email} access was restored in the channel ${channel.name}`
+        : `${newUser.nickname ?? newUser.email} was added to the channel ${channel.name}`,
+      user.id
+    )
 
     return {
       member: {
@@ -228,14 +200,7 @@ export default class ChatsController {
         isOnline: 0,
         admin: false,
       },
-      systemMessage: {
-        id: systemMessage.id,
-        content: systemMessage.content,
-        createdAt: systemMessage.createdAt?.toISO(),
-        mine: false,
-        sender: 'ZCHAT SYSTEM',
-        isSystem: true,
-      }
+      systemMessage: systemMessage,
     }
   }
 
@@ -287,37 +252,20 @@ export default class ChatsController {
       .delete()
 
     const systemMessage = await db.transaction(async (trx) => {
-      await trx
-        .from('channel_users')
-        .where('channel_id', channelId)
-        .where('user_id', target.id)
-        .delete()
-
-      return Message.create(
-        {
-          channelId,
-          chatType: false,
-          content: `${target.nickname ?? target.email} was removed from the channel ${channel.name}`,
-          createdBy: user.id,
-          isSystem: true,
-        },
-        { client: trx },
+      await trx.from('channel_users').where('channel_id', channelId).where('user_id', target.id).delete()
+      return this.createSystemMessage(
+        channelId,
+        `${target.nickname ?? target.email} was removed from the channel ${channel.name}`,
+        user.id,
+        trx
       )
     })
-
     return {
       member: {
         id: target.id,
         name: target.nickname ?? target.email,
       },
-      systemMessage: {
-        id: systemMessage.id,
-        content: systemMessage.content,
-        createdAt: systemMessage.createdAt?.toISO(),
-        mine: false,
-        sender: 'ZCHAT SYSTEM',
-        isSystem: true,
-      },
+      systemMessage: systemMessage,
   }
 }
 
@@ -376,6 +324,197 @@ export default class ChatsController {
 
     return {message: 'you left the channel'}
   }
+  async kickUser({ auth, response, params, request }: HttpContext) {
+    const me = auth.use('api').getUserOrFail()
+    const channelId = Number(params.id)
+    const nickname = String(request.input('nickname', '')).trim().replace(/^@/, '')
+
+    if (!Number.isInteger(channelId) || channelId <= 0) {
+      return response.badRequest({ message: 'invalid channel id' })
+    }
+    if (!nickname) return response.badRequest({ message: 'nickname is required' })
+
+    const channel = await Channel.find(channelId)
+    if (!channel) return response.notFound({ message: 'channel not found' })
+
+    const myMembership = await db.from('channel_users')
+      .where('channel_id', channelId).where('user_id', me.id).first()
+    if (!myMembership || myMembership.is_banned) {
+      return response.forbidden({ message: 'you are not a member of this channel' })
+    }
+
+    const target = await User.query().whereRaw('LOWER(nickname) = ?', [nickname.toLowerCase()]).first()
+    if (!target) return response.notFound({ message: 'user not found' })
+    if (target.id === me.id) return response.badRequest({ message: 'you cannot kick yourself' })
+
+    const targetMembership = await db.from('channel_users')
+      .where('channel_id', channelId).where('user_id', target.id).first()
+    if (!targetMembership || targetMembership.is_banned) {
+      return response.notFound({ message: 'user is not an active member of this channel' })
+    }
+    if (targetMembership.is_admin) {
+      return response.forbidden({ message: 'admin cannot be kicked' })
+    }
+
+    const KICKS_TO_BAN = 3
+    let banned = false
+    let votes = 0
+
+    if (myMembership.is_admin) {
+      banned = true
+    } else {
+      const already = await db.from('kick_directions')
+        .where('channel_id', channelId)
+        .where('kicked_id', target.id)
+        .where('kicker_id', me.id)
+        .first()
+      if (already) return response.conflict({ message: 'you already kicked this user' })
+
+      await db.table('kick_directions').insert({
+        channel_id: channelId,
+        kicked_id: target.id,
+        kicker_id: me.id,
+        created_at: new Date(),
+        updated_at: new Date(),
+      })
+
+      const [{ total }] = await db.from('kick_directions')
+        .where('channel_id', channelId)
+        .where('kicked_id', target.id)
+        .count('* as total')
+      votes = Number(total)
+      banned = votes >= KICKS_TO_BAN
+    }
+
+    if (banned) {
+      await db.from('channel_users')
+        .where('channel_id', channelId).where('user_id', target.id)
+        .update({ is_banned: true })
+    }
+
+    const name = target.nickname ?? target.email
+    const systemMessage = await this.createSystemMessage(
+      channelId,
+      banned
+        ? `${name} was banned from the channel ${channel.name}`
+        : `${name} was kicked by ${me.nickname ?? me.email} (${votes}/${KICKS_TO_BAN})`,
+      me.id
+    )
+    
+    return {
+      banned,
+      votes,
+      member: { id: target.id, name },
+      systemMessage: systemMessage,
+    }
+  }
+  private async createChannelWithAdmin(
+  name: string,
+  isPrivate: boolean,
+  adminId: number,
+  memberIds: number[] = []
+) {
+  return db.transaction(async (trx) => {
+    const ch = await Channel.create({ name, isPrivate }, { client: trx })
+    await trx.table('channel_users').insert([
+      { channel_id: ch.id, user_id: adminId, is_admin: true },
+      ...memberIds.map((id) => ({ channel_id: ch.id, user_id: id, is_admin: false })),
+    ])
+    return ch
+  })
+}
+
+  private async channelPayload(channel: Channel, me: User) {
+    const members = await db
+      .from('channel_users')
+      .join('users', 'users.id', 'channel_users.user_id')
+      .where('channel_users.channel_id', channel.id)
+      .where('channel_users.is_banned', false)
+      .select('users.id', 'users.nickname', 'users.email', 'channel_users.is_admin')
+    const votes = await db.from('kick_directions').where('channel_id', channel.id)
+
+    return {
+      id: channel.id,
+      name: channel.name,
+      isPrivate: Boolean(channel.isPrivate),
+      unreadCount: 0,
+      onlineCount: 0,
+      new: false,
+      usersList: members.map((u) => ({
+        id: u.id,
+        name: u.nickname ?? u.email,
+        isOnline: 0,
+        admin: Boolean(u.is_admin),
+        isMe: u.id === me.id,
+        kickVotes: votes.filter((v) => v.kicked_id === u.id).length,
+        kickedByMe: votes.some((v) => v.kicked_id === u.id && v.kicker_id === me.id),
+      })),
+    }
+  }
+
+  private async createSystemMessage(
+    channelId: number,
+    content: string,
+    createdBy: number,
+    client?: any
+  ) {
+    const m = await Message.create(
+      { channelId, chatType: false, content, createdBy, isSystem: true },
+      client ? { client } : undefined
+    )
+    return {
+      id: m.id,
+      content: m.content,
+      createdAt: m.createdAt?.toISO(),
+      mine: false,
+      sender: 'ZCHAT SYSTEM',
+      isSystem: true,
+    }
+  }
+  async joinChannel({ auth, request, response }: HttpContext) {
+  const me = auth.use('api').getUserOrFail()
+  const name = String(request.input('name', '')).trim()
+  const wantsPrivate = request.input('isPrivate') === true
+
+  if (!name) return response.badRequest({ message: 'Channel name is required' })
+  if (name.length > 50) return response.badRequest({ message: 'Channel name is too long' })
+
+  const existing = await Channel.query().whereRaw('LOWER(name) = ?', [name.toLowerCase()]).first()
+
+  if (!existing) {
+    const created = await this.createChannelWithAdmin(name, wantsPrivate, me.id)
+    return { created: true, channel: await this.channelPayload(created, me) }
+  }
+
+  const membership = await db
+    .from('channel_users')
+    .where('channel_id', existing.id)
+    .where('user_id', me.id)
+    .first()
+
+  if (membership?.is_banned) {
+    return response.forbidden({ message: 'you are banned from this channel' })
+  }
+
+  let systemMessage = null
+  if (!membership) {
+    if (existing.isPrivate) {
+      return response.forbidden({ message: 'this channel is private, you need an invite' })
+    }
+    await db.table('channel_users').insert({
+      channel_id: existing.id,
+      user_id: me.id,
+      is_admin: false,
+    })
+    systemMessage = await this.createSystemMessage(
+      existing.id,
+      `${me.nickname ?? me.email} joined the channel ${existing.name}`,
+      me.id
+    )
+  }
+
+  return { created: false, channel: await this.channelPayload(existing, me), systemMessage }
+}
 
 
 }

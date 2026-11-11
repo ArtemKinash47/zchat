@@ -33,7 +33,7 @@ export class AuthAccessTokenSchema extends BaseModel {
 }
 
 export class ChannelUserSchema extends BaseModel {
-  static $columns = ['channelId', 'createdAt', 'id', 'isAdmin', 'updatedAt', 'userId'] as const
+  static $columns = ['channelId', 'createdAt', 'id', 'isAdmin', 'isBanned', 'kickCount', 'updatedAt', 'userId'] as const
   $columns = ChannelUserSchema.$columns
   @column()
   declare channelId: number
@@ -43,6 +43,10 @@ export class ChannelUserSchema extends BaseModel {
   declare id: number
   @column()
   declare isAdmin: boolean
+  @column()
+  declare isBanned: boolean
+  @column()
+  declare kickCount: number
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
@@ -79,6 +83,21 @@ export class DirectChatSchema extends BaseModel {
   declare userId1: number
   @column()
   declare userId2: number
+}
+
+export class KickDirectionSchema extends BaseModel {
+  static $columns = ['channelId', 'createdAt', 'kickedId', 'kickerId', 'updatedAt'] as const
+  $columns = KickDirectionSchema.$columns
+  @column()
+  declare channelId: number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
+  @column()
+  declare kickedId: number
+  @column()
+  declare kickerId: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
 }
 
 export class MessageSchema extends BaseModel {

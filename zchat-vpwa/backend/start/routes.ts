@@ -26,6 +26,8 @@ router
 
     router
       .group(() => {
+        router.post('channels/join', '#controllers/chats_controller.joinChannel')
+        router.post('channels/:id/kick', '#controllers/chats_controller.kickUser')
         router.post('chats/direct', '#controllers/chats_controller.storeDirect')
         router.get('chats', '#controllers/chats_controller.index')
         router.get('users', '#controllers/chats_controller.searchUsers')

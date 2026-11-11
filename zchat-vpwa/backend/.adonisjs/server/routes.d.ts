@@ -6,6 +6,8 @@ export type ScannedRoutes = {
   ALL: {
     'auth.new_account.store': { paramsTuple?: []; params?: {} }
     'auth.access_tokens.store': { paramsTuple?: []; params?: {} }
+    'profile.chats.join_channel': { paramsTuple?: []; params?: {} }
+    'profile.chats.kick_user': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.chats.store_direct': { paramsTuple?: []; params?: {} }
     'profile.chats.index': { paramsTuple?: []; params?: {} }
     'profile.chats.search_users': { paramsTuple?: []; params?: {} }
@@ -34,6 +36,8 @@ export type ScannedRoutes = {
   POST: {
     'auth.new_account.store': { paramsTuple?: []; params?: {} }
     'auth.access_tokens.store': { paramsTuple?: []; params?: {} }
+    'profile.chats.join_channel': { paramsTuple?: []; params?: {} }
+    'profile.chats.kick_user': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.chats.store_direct': { paramsTuple?: []; params?: {} }
     'profile.chats.store_channel': { paramsTuple?: []; params?: {} }
     'profile.chats.add_channel_member': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

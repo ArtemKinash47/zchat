@@ -39,7 +39,18 @@
               <q-item-section side>
                 <q-badge v-if="participant.admin" color="primary" label="Admin" />
               </q-item-section>
-              <q-btn class="justify-end" color="accent" label="0/3" flat icon="group_remove" />
+              <q-btn
+                v-if="!participant.admin && !participant.isMe"
+                class="justify-end"
+                color="accent"
+                flat
+                icon="group_remove"
+                :label="`${participant.kickVotes ?? 0}/3`"
+                :disable="participant.kickedByMe"
+                @click="emit('kick-member', participant.name)"
+              >
+                <q-tooltip>{{ participant.kickedByMe ? 'You already kicked this user' : 'Kick user' }}</q-tooltip>
+              </q-btn>
             </q-item>
             <q-item v-if="props.participants.length === 0">
               <q-item-section class="text-grey">No members yet</q-item-section>
@@ -68,7 +79,9 @@
         <q-btn
           color="negative"
           :label="props.chatType === 1 ? 'Leave chat' : 'Leave channel'"
+          :disable="props.chatType !== 2"
           v-close-popup
+          @click="emit('leave')"
         />
       </q-card-section>
     </q-card>
@@ -89,7 +102,7 @@ function getStatusColor(isOnline) {
   return 'grey'
 }
 
-const emit = defineEmits(['add-member'])
+const emit = defineEmits(['add-member', 'kick-member', 'leave'])
 const isOpen = defineModel({ type: Boolean, default: false })
 const isPrivate = defineModel('isPrivate', { type: Boolean, default: false })
 const newMemberName = ref('')

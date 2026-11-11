@@ -34,6 +34,32 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/access_tokens_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'profile.chats.join_channel': {
+    methods: ["POST"]
+    pattern: '/api/v1/account/channels/join'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: unknown
+      errorResponse: unknown
+      rawResponse: ExtractRawResponse<unknown>
+    }
+  }
+  'profile.chats.kick_user': {
+    methods: ["POST"]
+    pattern: '/api/v1/account/channels/:id/kick'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: unknown
+      errorResponse: unknown
+      rawResponse: ExtractRawResponse<unknown>
+    }
+  }
   'profile.chats.store_direct': {
     methods: ["POST"]
     pattern: '/api/v1/account/chats/direct'
