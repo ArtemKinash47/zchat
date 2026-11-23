@@ -33,7 +33,7 @@ export class AuthAccessTokenSchema extends BaseModel {
 }
 
 export class ChannelUserSchema extends BaseModel {
-  static $columns = ['channelId', 'createdAt', 'id', 'isAdmin', 'isBanned', 'kickCount', 'updatedAt', 'userId'] as const
+  static $columns = ['channelId', 'createdAt', 'id', 'isAdmin', 'isBanned', 'isNew', 'kickCount', 'updatedAt', 'userId'] as const
   $columns = ChannelUserSchema.$columns
   @column()
   declare channelId: number
@@ -45,6 +45,8 @@ export class ChannelUserSchema extends BaseModel {
   declare isAdmin: boolean
   @column()
   declare isBanned: boolean
+  @column()
+  declare isNew: boolean
   @column()
   declare kickCount: number
   @column.dateTime({ autoCreate: true, autoUpdate: true })
@@ -66,6 +68,23 @@ export class ChannelSchema extends BaseModel {
   declare name: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+}
+
+export class DirectChatUserSchema extends BaseModel {
+  static $columns = ['createdAt', 'directChatId', 'id', 'isNew', 'updatedAt', 'userId'] as const
+  $columns = DirectChatUserSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
+  @column()
+  declare directChatId: number
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isNew: boolean
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: number
 }
 
 export class DirectChatSchema extends BaseModel {

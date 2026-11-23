@@ -43,7 +43,7 @@
               <q-list>
                 <ChatLink
                   v-for="chat in sortedChatLinks"
-                  :key="chat.name"
+                  :key="chat.id"
                   v-bind="chat"
                   @clear-unread="clearChatUnread"
                 />
@@ -54,7 +54,7 @@
               <q-list>
                 <ChannelLink
                   v-for="channel in sortedChannelLinks"
-                  :key="channel.name"
+                  :key="channel.id"
                   v-bind="channel"
                   @clear-unread-channel="clearChannelUnread"
                 />
@@ -282,7 +282,7 @@ async function loadChats() {
 
     const keep = (list, c) => {
       const old = list.value.find((o) => o.id === c.id)
-      return { ...c, unreadCount: old?.unreadCount ?? 0, new: old?.new ?? c.new }
+      return { ...c, unreadCount: old?.unreadCount ?? 0 }
     }
     chatLinks.value = data.directChats.map((c) => ({
       ...keep(chatLinks, c),
@@ -505,19 +505,43 @@ function openAddChat() {
   addChatOpen.value = true
 }
 
-function clearChatUnread(chatName) {
-  const chat = chatLinks.value.find(({ name }) => name === chatName)
+async function clearChatUnread(chatId) {
+  const chat = chatLinks.value.find(({ id }) => id === chatId)
   if (chat) {
     chat.unreadCount = 0
-    chat.new = false
+    if (!chat.new) return
+
+    try {
+      const res = await fetch(`http://localhost:3333/api/v1/account/chats/${chat.id}/read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      })
+      if (!res.ok) throw new Error(`Could not mark chat as read (${res.status})`)
+      chat.new = false
+    } catch (error) {
+      console.error('Mark chat as read failed:', error)
+      $q.notify({ type: 'negative', message: error.message })
+    }
   }
 }
 
-function clearChannelUnread(channelName) {
-  const channel = channelLinks.value.find(({ name }) => name === channelName)
+async function clearChannelUnread(channelId) {
+  const channel = channelLinks.value.find(({ id }) => id === channelId)
   if (channel) {
     channel.unreadCount = 0
-    channel.new = false
+    if (!channel.new) return
+
+    try {
+      const res = await fetch(`http://localhost:3333/api/v1/account/channels/${channel.id}/read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      })
+      if (!res.ok) throw new Error(`Could not mark channel as read (${res.status})`)
+      channel.new = false
+    } catch (error) {
+      console.error('Mark channel as read failed:', error)
+      $q.notify({ type: 'negative', message: error.message })
+    }
   }
 }
 

@@ -10,8 +10,10 @@ export type ScannedRoutes = {
     'profile.chats.kick_user': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.chats.store_direct': { paramsTuple?: []; params?: {} }
     'profile.chats.index': { paramsTuple?: []; params?: {} }
+    'profile.chats.mark_direct_chat_read': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.chats.search_users': { paramsTuple?: []; params?: {} }
     'profile.chats.store_channel': { paramsTuple?: []; params?: {} }
+    'profile.chats.mark_channel_read': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.chats.add_channel_member': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.messages.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.messages.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -43,6 +45,10 @@ export type ScannedRoutes = {
     'profile.chats.add_channel_member': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.messages.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
+  }
+  PATCH: {
+    'profile.chats.mark_direct_chat_read': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'profile.chats.mark_channel_read': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   DELETE: {
     'profile.chats.destroy_channel': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

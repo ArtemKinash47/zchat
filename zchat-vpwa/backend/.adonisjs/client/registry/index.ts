@@ -44,6 +44,12 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"chats"]],
     types: placeholder as Registry['profile.chats.index']['types'],
   },
+  'profile.chats.mark_direct_chat_read': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/account/chats/:id/read',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"chats"],[1,"id"],[0,"read"]],
+    types: placeholder as Registry['profile.chats.mark_direct_chat_read']['types'],
+  },
   'profile.chats.search_users': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/account/users',
@@ -55,6 +61,12 @@ const routes = {
     pattern: '/api/v1/account/channels',
     tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"channels"]],
     types: placeholder as Registry['profile.chats.store_channel']['types'],
+  },
+  'profile.chats.mark_channel_read': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/account/channels/:id/read',
+    tokens: [[0,"api"],[0,"v1"],[0,"account"],[0,"channels"],[1,"id"],[0,"read"]],
+    types: placeholder as Registry['profile.chats.mark_channel_read']['types'],
   },
   'profile.chats.add_channel_member': {
     methods: ["POST"],

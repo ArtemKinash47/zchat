@@ -16,6 +16,19 @@ export default class ChatsController {
       .orWhere('userId2', me.id)
       .preload('chatter1')
       .preload('chatter2')
+    const directChatMemberships = await db
+      .from('direct_chat_users')
+      .where('user_id', me.id)
+      .whereIn(
+        'direct_chat_id',
+        directChats.map((chat) => chat.id)
+      )
+      .select('direct_chat_id', 'is_new')
+    const newDirectChatIds = new Set(
+      directChatMemberships
+        .filter((membership) => membership.is_new)
+        .map((membership) => membership.direct_chat_id)
+    )
 
     return {
       directChats: directChats.map((chat) => {
@@ -28,7 +41,7 @@ export default class ChatsController {
           avatar: null,
           isOnline: 0,
           unreadCount: 0,
-          new: chat.new ?? false,
+          new: newDirectChatIds.has(chat.id),
         }
       }),
       channels: await Promise.all(channels.map((c) => this.channelPayload(c, me))),
@@ -46,7 +59,41 @@ export default class ChatsController {
     if (other.id === me.id) return response.badRequest({ message: 'You cannot chat with yourself' })
 
     const [u1, u2] = me.id < other.id ? [me.id, other.id] : [other.id, me.id]
-    const chat = await DirectChat.firstOrCreate({ userId1: u1, userId2: u2 }, { new: true })
+    const chat = await db.transaction(async (trx) => {
+      let existingChat = await DirectChat.query({ client: trx })
+        .where('userId1', u1)
+        .where('userId2', u2)
+        .first()
+      const isNewChat = !existingChat
+
+      if (!existingChat) {
+        existingChat = await DirectChat.create({ userId1: u1, userId2: u2 }, { client: trx })
+      }
+
+      for (const userId of [me.id, other.id]) {
+        const membership = await trx
+          .from('direct_chat_users')
+          .where('direct_chat_id', existingChat.id)
+          .where('user_id', userId)
+          .first()
+
+        if (!membership) {
+          await trx.table('direct_chat_users').insert({
+            direct_chat_id: existingChat.id,
+            user_id: userId,
+            is_new: isNewChat && userId !== me.id,
+          })
+        } else if (userId === me.id && membership.is_new) {
+          await trx
+            .from('direct_chat_users')
+            .where('direct_chat_id', existingChat.id)
+            .where('user_id', me.id)
+            .update({ is_new: false, updated_at: new Date() })
+        }
+      }
+
+      return existingChat
+    })
     emitToUsers([other.id], 'chats:changed', () => ({}))
     return {
       chat: {
@@ -57,9 +104,59 @@ export default class ChatsController {
         avatar: null,
         isOnline: 0,
         unreadCount: 0,
-        new: Boolean(chat.new),
+        new: false,
       },
     }
+  }
+
+  async markDirectChatRead({ auth, params, response }: HttpContext) {
+    const me = auth.use('api').getUserOrFail()
+    const chatId = Number(params.id)
+
+    if (!Number.isInteger(chatId) || chatId <= 0) {
+      return response.badRequest({ message: 'Invalid chat id' })
+    }
+
+    const chat = await DirectChat.query()
+      .where('id', chatId)
+      .where((query) => query.where('userId1', me.id).orWhere('userId2', me.id))
+      .first()
+
+    if (!chat) return response.notFound({ message: 'Chat not found' })
+
+    await db
+      .from('direct_chat_users')
+      .where('direct_chat_id', chatId)
+      .where('user_id', me.id)
+      .update({ is_new: false, updated_at: new Date() })
+
+    return { new: false }
+  }
+
+  async markChannelRead({ auth, params, response }: HttpContext) {
+    const me = auth.use('api').getUserOrFail()
+    const channelId = Number(params.id)
+
+    if (!Number.isInteger(channelId) || channelId <= 0) {
+      return response.badRequest({ message: 'Invalid channel id' })
+    }
+
+    const membership = await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', me.id)
+      .where('is_banned', false)
+      .first()
+
+    if (!membership) return response.notFound({ message: 'Channel not found' })
+
+    await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', me.id)
+      .update({ is_new: false, updated_at: new Date() })
+
+    return { new: false }
   }
 
   async searchUsers({ auth, request }: HttpContext) {
@@ -178,13 +275,13 @@ export default class ChatsController {
       }
       await db.from('channel_users')
         .where('channel_id', channelId).where('user_id', newUser.id)
-        .update({ is_banned: false })
+        .update({ is_banned: false, is_new: true })
       await db.from('kick_directions')
         .where('channel_id', channelId).where('kicked_id', newUser.id).delete()
       restored = true
     } else {
       await db.table('channel_users').insert({
-        channel_id: channelId, user_id: newUser.id, is_admin: false,
+        channel_id: channelId, user_id: newUser.id, is_admin: false, is_new: true,
       })
     }
     const systemMessage = await this.createSystemMessage(
@@ -413,20 +510,20 @@ export default class ChatsController {
     }
   }
   private async createChannelWithAdmin(
-  name: string,
-  isPrivate: boolean,
-  adminId: number,
-  memberIds: number[] = []
-) {
-  return db.transaction(async (trx) => {
-    const ch = await Channel.create({ name, isPrivate }, { client: trx })
-    await trx.table('channel_users').insert([
-      { channel_id: ch.id, user_id: adminId, is_admin: true },
-      ...memberIds.map((id) => ({ channel_id: ch.id, user_id: id, is_admin: false })),
-    ])
-    return ch
-  })
-}
+    name: string,
+    isPrivate: boolean,
+    adminId: number,
+    memberIds: number[] = []
+  ) {
+    return db.transaction(async (trx) => {
+      const ch = await Channel.create({ name, isPrivate }, { client: trx })
+      await trx.table('channel_users').insert([
+        { channel_id: ch.id, user_id: adminId, is_admin: true, is_new: false },
+        ...memberIds.map((id) => ({ channel_id: ch.id, user_id: id, is_admin: false, is_new: true })),
+      ])
+      return ch
+    })
+  }
 
   private async channelPayload(channel: Channel, me: User) {
     const members = await db
@@ -434,8 +531,15 @@ export default class ChatsController {
       .join('users', 'users.id', 'channel_users.user_id')
       .where('channel_users.channel_id', channel.id)
       .where('channel_users.is_banned', false)
-      .select('users.id', 'users.nickname', 'users.email', 'channel_users.is_admin')
+      .select(
+        'users.id',
+        'users.nickname',
+        'users.email',
+        'channel_users.is_admin',
+        'channel_users.is_new'
+      )
     const votes = await db.from('kick_directions').where('channel_id', channel.id)
+    const myMembership = members.find((member) => member.id === me.id)
 
     return {
       id: channel.id,
@@ -443,7 +547,7 @@ export default class ChatsController {
       isPrivate: Boolean(channel.isPrivate),
       unreadCount: 0,
       onlineCount: 0,
-      new: false,
+      new: Boolean(myMembership?.is_new),
       usersList: members.map((u) => ({
         id: u.id,
         name: u.nickname ?? u.email,
@@ -510,6 +614,7 @@ export default class ChatsController {
         channel_id: existing.id,
         user_id: me.id,
         is_admin: false,
+        is_new: false,
       })
       systemMessage = await this.createSystemMessage(
         existing.id,

@@ -86,6 +86,19 @@ export interface Registry {
       rawResponse: ExtractRawResponse<unknown>
     }
   }
+  'profile.chats.mark_direct_chat_read': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/account/chats/:id/read'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: unknown
+      errorResponse: unknown
+      rawResponse: ExtractRawResponse<unknown>
+    }
+  }
   'profile.chats.search_users': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/account/users'
@@ -106,6 +119,19 @@ export interface Registry {
       body: {}
       paramsTuple: []
       params: {}
+      query: {}
+      response: unknown
+      errorResponse: unknown
+      rawResponse: ExtractRawResponse<unknown>
+    }
+  }
+  'profile.chats.mark_channel_read': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/account/channels/:id/read'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
       query: {}
       response: unknown
       errorResponse: unknown

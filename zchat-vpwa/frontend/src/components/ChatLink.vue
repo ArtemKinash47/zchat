@@ -7,7 +7,7 @@
         name: props.hasNickname ? deleteAt(props.nickname) || props.name : props.name,
       },
     }"
-    @click="emit('clear-unread', props.name)"
+    @click="emit('clear-unread', props.id)"
   >
     <q-item-section avatar>
       <div class="relative-position">
@@ -51,6 +51,10 @@ const props = defineProps({
   name: {
     type: String,
     default: '',
+  },
+  id: {
+    type: Number,
+    default: null,
   },
 
   hasNickname: {

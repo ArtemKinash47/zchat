@@ -223,7 +223,6 @@ function onSocketMessage({ type, chatId, message }) {
     const link = (type === 'channel' ? channelLinks : chatLinks).value.find((c) => c.id === chatId)
     if (link) {
       link.unreadCount = (link.unreadCount ?? 0) + 1
-      link.new = true
     }
   }
 }
