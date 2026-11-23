@@ -126,6 +126,8 @@ const messagesScrollArea = ref(null)
 const messageHistory = ref(null)
 const ChatInfoOpen = ref(false)
 const router = useRouter()
+import { onBeforeUnmount, onMounted } from 'vue'
+import realtime from '@/services/RealtimeService'
 
 function scrollMessagesToBottom() {
   nextTick(() => {
@@ -206,13 +208,28 @@ const channelIsPrivate = computed({
     if (currentChannel.value) currentChannel.value.isPrivate = value
   },
 })
-
-function pushMessage(conv, systemMessage) {
-  messagesByConversation.value[conv.key] = [
-    ...(messagesByConversation.value[conv.key] ?? []),
-    mapMessage(systemMessage),
-  ]
+function addMessage(key, raw) {
+  const list = messagesByConversation.value[key] ?? []
+  if (list.some((m) => m.id === raw.id)) return   // HTTP odpoveď aj udalosť
+  messagesByConversation.value[key] = [...list, mapMessage(raw)]
 }
+function pushMessage(conv, systemMessage) {
+  addMessage(conv.key, systemMessage)
+}
+function onSocketMessage({ type, chatId, message }) {
+  const key = `${type}:${chatId}`
+  addMessage(key, message)
+  if (activeConversation.value?.key !== key && !message.mine) {
+    const link = (type === 'channel' ? channelLinks : chatLinks).value.find((c) => c.id === chatId)
+    if (link) {
+      link.unreadCount = (link.unreadCount ?? 0) + 1
+      link.new = true
+    }
+  }
+}
+let offMessage = null
+onMounted(() => { offMessage = realtime.on('message:new', onSocketMessage) })
+onBeforeUnmount(() => offMessage?.())
 async function kickMember(nickname) {
   const conv = activeConversation.value
   if (!conv || conv.type !== 'channel' || !currentChannel.value) {
@@ -483,10 +500,7 @@ async function sendMessage() {
 
       channel.usersList = channel.usersList.filter((existing) => existing.id !== member.id)
 
-      messagesByConversation.value[conv.key] = [
-        ...list,
-        mapMessage(body.systemMessage),
-      ]
+      messagesByConversation.value[conv.key] = addMessage(conv.key, body.systemMessage)
       text.value = ''
     } catch (error) {
       console.error('Deletion failed:', error)
@@ -516,18 +530,12 @@ async function sendMessage() {
   }
 
   try {
-    const res = await fetch(`${API_URL}/chats/${conv.id}/messages`, {
-      method: 'POST',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: conv.type, content: messageText }),
-    })
-    if (!res.ok) throw new Error(`send ${res.status}`)
-    const { message } = await res.json()
-    messagesByConversation.value[conv.key] = [...list, mapMessage(message)]
+    const message = await realtime.sendMessage(conv.type, conv.id, messageText)
+    addMessage(conv.key, message)
     text.value = ''
   } catch (e) {
     console.error(e)
-    $q.notify({ type: 'negative', message: 'Message was not sent' })
+    $q.notify({ type: 'negative', message: e?.message || 'Message was not sent' })
   }
 }
 

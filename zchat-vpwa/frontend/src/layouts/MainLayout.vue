@@ -251,7 +251,12 @@ import MyProfile from '@/components/MyProfile.vue'
 import Settings from '@/components/Settings.vue'
 import { onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
+import realtime from '@/services/RealtimeService'
 const $q = useQuasar()
+const route = useRoute()
+const onlineIds = ref(new Set())
 
 const router = useRouter()
 const text_200 = ref('')
@@ -275,11 +280,16 @@ async function loadChats() {
     console.log('data:', data)
     if (!res.ok) return
 
+    const keep = (list, c) => {
+      const old = list.value.find((o) => o.id === c.id)
+      return { ...c, unreadCount: old?.unreadCount ?? 0, new: old?.new ?? c.new }
+    }
     chatLinks.value = data.directChats.map((c) => ({
-      ...c,
+      ...keep(chatLinks, c),
       avatar: c.avatar ?? getAvatarUrl(c.nickname ?? c.name),
     }))
-    channelLinks.value = data.channels
+    channelLinks.value = data.channels.map((c) => keep(channelLinks, c))
+    applyPresence()
   } catch (e) {
     console.error('loadChats failed:', e)
   }
@@ -525,6 +535,39 @@ function upsertChannel(channel) {
   else channelLinks.value.push(channel)
 }
 provide('upsertChannel', upsertChannel)
+function applyPresence() {
+  for (const c of chatLinks.value) c.isOnline = onlineIds.value.has(c.userId) ? 1 : 0
+  for (const ch of channelLinks.value) {
+    for (const u of ch.usersList ?? []) u.isOnline = onlineIds.value.has(u.id) ? 1 : 0
+    ch.onlineCount = (ch.usersList ?? []).filter((u) => u.isOnline === 1).length
+  }
+}
+
+const presence = {
+  here: (ids) => { onlineIds.value = new Set(ids); applyPresence() },
+  joining: (id) => { onlineIds.value = new Set([...onlineIds.value, id]); applyPresence() },
+  leaving: (id) => { const s = new Set(onlineIds.value); s.delete(id); onlineIds.value = s; applyPresence() },
+}
+
+async function onChatsChanged() {
+  await loadChats()
+  const current = route.query.channel
+  if (typeof current === 'string' && current && !channelLinks.value.some((c) => c.name === current)) {
+    router.push('/')
+    $q.notify({ type: 'warning', message: 'You no longer have access to this channel' })
+  }
+}
+
+let offChanged = null
+onMounted(async () => {
+  offChanged = realtime.on('chats:changed', onChatsChanged)
+  try {
+    await realtime.join(Number(localStorage.getItem('userId')), presence)
+  } catch (e) {
+    console.error('[socket]', e)
+  }
+})
+onBeforeUnmount(() => offChanged?.())
 
 </script>
 

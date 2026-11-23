@@ -1,23 +1,13 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import db from '@adonisjs/lucid/services/db'
-import DirectChat from '#models/direct_chat'
 import Message from '#models/message'
-import User from '#models/user'
+import { sendMessage, messageToJson, recipientIds, type ChatType } from '#services/realtime'
 
 export default class MessagesController {
-  private async canAccess(userId: number, type: string, id: number) {
-    if (type === 'direct') {
-      const chat = await DirectChat.find(id)
-      return !!chat && (chat.userId1 === userId || chat.userId2 === userId)
-    }
-    const row = await db.from('channel_users').where('channel_id', id).where('user_id', userId).where('is_banned', false).first()
-    return !!row
-  }
   async index({ auth, params, request, response }: HttpContext) {
     const me = auth.use('api').getUserOrFail()
-    const type = request.input('type') === 'channel' ? 'channel' : 'direct'
+    const type: ChatType = request.input('type') === 'channel' ? 'channel' : 'direct'
     const id = Number(params.id)
-    if (!(await this.canAccess(me.id, type, id))) return response.forbidden({ message: 'Access denied' })
+    if (!(await recipientIds(type, id)).includes(me.id)) return response.forbidden({ message: 'Access denied' })
 
     const limit = Math.min(Number(request.input('limit')) || 20, 50)
     const before = Number(request.input('before')) || null
@@ -32,43 +22,17 @@ export default class MessagesController {
 
     const hasMore = rows.length > limit
     const page = rows.slice(0, limit).reverse()
-    return { messages: page.map((m) => this.toJson(m, me)), hasMore }
+    return { messages: page.map((m) => messageToJson(m, me)), hasMore }
   }
 
   async store({ auth, params, request, response }: HttpContext) {
     const me = auth.use('api').getUserOrFail()
-    const type = request.input('type') === 'channel' ? 'channel' : 'direct'
-    const id = Number(params.id)
-    const content = String(request.input('content', '')).trim()
-    if (!content) return response.badRequest({ message: 'Empty message' })
-    if (!(await this.canAccess(me.id, type, id))) return response.forbidden({ message: 'Access denied' })
-
-    const message = await Message.create({
-      channelId: id,
-      chatType: type === 'direct',
-      content,
-      createdBy: me.id,
-    })
-    await message.load('author')
-    return { message: this.toJson(message, me) }
-    
-  }
-  private mentionsUser(content: string, nickname: string | null) {
-    if (!nickname) return false
-    const escaped = nickname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return new RegExp(`(^|\\s)@${escaped}(?![A-Za-z0-9_])`, 'i').test(content)
-  }
-
-  private toJson(m: Message, me: User) {
-    const a = m.author
-    return {
-      id: m.id,
-      content: m.content,
-      createdAt: m.createdAt?.toISO(),
-      mine: m.createdBy === me.id,
-      isSystem: m.isSystem,
-      mentionsMe: !m.isSystem && m.createdBy !== me.id && this.mentionsUser(m.content, me.nickname),
-      sender: a ? [a.firstName, a.lastName].filter(Boolean).join(' ') || a.nickname || a.email : 'Unknown',
+    const type: ChatType = request.input('type') === 'channel' ? 'channel' : 'direct'
+    try {
+      return { message: await sendMessage(me, type, Number(params.id), request.input('content')) }
+    } catch (e) {
+      return response.badRequest({ message: (e as Error).message })
     }
-}
+  }
+  
 }

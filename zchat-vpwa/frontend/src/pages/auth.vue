@@ -74,6 +74,7 @@ async function onAuth(formData) {
     const regSelected = tab.value === 'Registration'
     const response = await fetch(`${API_URL}/auth/${regSelected ? 'signup' : 'login'}`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(
         regSelected
@@ -104,6 +105,7 @@ async function onAuth(formData) {
     const payload = result.data ?? result
     if (!payload.token) throw new Error('missing token in server response.')
     localStorage.setItem('token', payload.token)
+    localStorage.setItem('userId', String(payload.user.id)) 
     login()
     await router.push('/')
   } catch (error) {

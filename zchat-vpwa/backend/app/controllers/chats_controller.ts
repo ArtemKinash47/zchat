@@ -4,6 +4,7 @@ import DirectChat from '#models/direct_chat'
 import User from '#models/user'
 import Channel from '#models/channel'
 import Message from '#models/message'
+import { emitToUsers, channelMemberIds } from '#services/realtime'
 
 export default class ChatsController {
   async index({ auth }: HttpContext) {
@@ -46,7 +47,7 @@ export default class ChatsController {
 
     const [u1, u2] = me.id < other.id ? [me.id, other.id] : [other.id, me.id]
     const chat = await DirectChat.firstOrCreate({ userId1: u1, userId2: u2 }, { new: true })
-
+    emitToUsers([other.id], 'chats:changed', () => ({}))
     return {
       chat: {
         id: chat.id,
@@ -133,6 +134,7 @@ export default class ChatsController {
       me.id,
       members.map((m) => m.id)
     )
+    await this.notifyChannel(channel.id)
     return { channel: await this.channelPayload(channel, me) }
     
   }
@@ -192,7 +194,7 @@ export default class ChatsController {
         : `${newUser.nickname ?? newUser.email} was added to the channel ${channel.name}`,
       user.id
     )
-
+    await this.notifyChannel(channelId, systemMessage, [newUser.id])
     return {
       member: {
         id: newUser.id,
@@ -260,6 +262,7 @@ export default class ChatsController {
         trx
       )
     })
+    await this.notifyChannel(channelId, systemMessage, [target.id])
     return {
       member: {
         id: target.id,
@@ -283,13 +286,13 @@ export default class ChatsController {
     if(!isInChat || !isInChat.is_admin) {
       return response.forbidden({message: 'only admins can delete channel'})
     }
-
+    const memberIds = await channelMemberIds(channelId)
     await db.transaction(async (trx) => {
       await trx.from('messages').where('channel_id', channelId).where('chat_type', false).delete()
       await trx.from('channel_users').where('channel_id', channelId).delete()
       await trx.from('channels').where('id', channelId).delete()
     })
-
+    emitToUsers(memberIds, 'chats:changed', () => ({}))
     return {message: 'channel closed/deleted successfully'}
   }
 
@@ -306,22 +309,23 @@ export default class ChatsController {
     if(!sub) return response.forbidden({message: 'you are not a member'})
 
     if (sub.is_admin) {
+      const memberIds = await channelMemberIds(channelId) 
       await db.transaction(async (trx) => {
         await trx
           .from('messages')
           .where('channel_id', channelId)
           .where('chat_type', false)
           .delete()
-
+        
         await trx.from('channel_users').where('channel_id', channelId).delete()
         await trx.from('channels').where('id', channelId).delete()
       })
-
+      emitToUsers(memberIds, 'chats:changed', () => ({}))
       return {message: 'channel deleted successfully'}
     }
 
     await db.from('channel_users').where('channel_id', channelId).where('user_id', user.id).delete()
-
+    await this.notifyChannel(channelId, undefined, [user.id])
     return {message: 'you left the channel'}
   }
   async kickUser({ auth, response, params, request }: HttpContext) {
@@ -400,7 +404,7 @@ export default class ChatsController {
         : `${name} was kicked by ${me.nickname ?? me.email} (${votes}/${KICKS_TO_BAN})`,
       me.id
     )
-    
+    await this.notifyChannel(channelId, systemMessage, [target.id])
     return {
       banned,
       votes,
@@ -472,49 +476,57 @@ export default class ChatsController {
     }
   }
   async joinChannel({ auth, request, response }: HttpContext) {
-  const me = auth.use('api').getUserOrFail()
-  const name = String(request.input('name', '')).trim()
-  const wantsPrivate = request.input('isPrivate') === true
+    const me = auth.use('api').getUserOrFail()
+    const name = String(request.input('name', '')).trim()
+    const wantsPrivate = request.input('isPrivate') === true
 
-  if (!name) return response.badRequest({ message: 'Channel name is required' })
-  if (name.length > 50) return response.badRequest({ message: 'Channel name is too long' })
+    if (!name) return response.badRequest({ message: 'Channel name is required' })
+    if (name.length > 50) return response.badRequest({ message: 'Channel name is too long' })
 
-  const existing = await Channel.query().whereRaw('LOWER(name) = ?', [name.toLowerCase()]).first()
+    const existing = await Channel.query().whereRaw('LOWER(name) = ?', [name.toLowerCase()]).first()
 
-  if (!existing) {
-    const created = await this.createChannelWithAdmin(name, wantsPrivate, me.id)
-    return { created: true, channel: await this.channelPayload(created, me) }
-  }
-
-  const membership = await db
-    .from('channel_users')
-    .where('channel_id', existing.id)
-    .where('user_id', me.id)
-    .first()
-
-  if (membership?.is_banned) {
-    return response.forbidden({ message: 'you are banned from this channel' })
-  }
-
-  let systemMessage = null
-  if (!membership) {
-    if (existing.isPrivate) {
-      return response.forbidden({ message: 'this channel is private, you need an invite' })
+    if (!existing) {
+      const created = await this.createChannelWithAdmin(name, wantsPrivate, me.id)
+      await this.notifyChannel(created.id)
+      return { created: true, channel: await this.channelPayload(created, me) }
     }
-    await db.table('channel_users').insert({
-      channel_id: existing.id,
-      user_id: me.id,
-      is_admin: false,
-    })
-    systemMessage = await this.createSystemMessage(
-      existing.id,
-      `${me.nickname ?? me.email} joined the channel ${existing.name}`,
-      me.id
-    )
-  }
 
-  return { created: false, channel: await this.channelPayload(existing, me), systemMessage }
-}
+    const membership = await db
+      .from('channel_users')
+      .where('channel_id', existing.id)
+      .where('user_id', me.id)
+      .first()
+
+    if (membership?.is_banned) {
+      return response.forbidden({ message: 'you are banned from this channel' })
+    }
+
+    let systemMessage = null
+    if (!membership) {
+      if (existing.isPrivate) {
+        return response.forbidden({ message: 'this channel is private, you need an invite' })
+      }
+      await db.table('channel_users').insert({
+        channel_id: existing.id,
+        user_id: me.id,
+        is_admin: false,
+      })
+      systemMessage = await this.createSystemMessage(
+        existing.id,
+        `${me.nickname ?? me.email} joined the channel ${existing.name}`,
+        me.id
+      )
+    }
+    await this.notifyChannel(existing.id, systemMessage ?? undefined)
+    return { created: false, channel: await this.channelPayload(existing, me), systemMessage }
+  }
+  private async notifyChannel(channelId: number, systemMessage?: object, extraUserIds: number[] = []) {
+    const ids = await channelMemberIds(channelId)
+    if (systemMessage) {
+      emitToUsers(ids, 'message:new', () => ({ type: 'channel', chatId: channelId, message: systemMessage }))
+    }
+    emitToUsers([...ids, ...extraUserIds], 'chats:changed', () => ({}))
+  }
 
 
 }

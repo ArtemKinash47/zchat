@@ -49,7 +49,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
-
+import realtime from '@/services/RealtimeService'
 import { Dark } from 'quasar'
 
 
@@ -57,9 +57,16 @@ const router = useRouter()
 const group = ref('onl')
 const { logout } = useAuth()
 const direct = ref(false)
-function onItemClick() {
+async function onItemClick() {
   Dark.set(false)
+  try {
+    await realtime.leave()
+  } catch (e) {
+    console.error('[socket]', e)
+  }
   logout()
+  localStorage.removeItem('token')
+  localStorage.removeItem('userId')
   router.push('/auth')
 }
 

@@ -85,6 +85,15 @@ export class DirectChatSchema extends BaseModel {
   declare userId2: number
 }
 
+export class DirectedToSchema extends BaseModel {
+  static $columns = ['mId', 'uId'] as const
+  $columns = DirectedToSchema.$columns
+  @column({ isPrimary: true })
+  declare mId: number
+  @column()
+  declare uId: number
+}
+
 export class KickDirectionSchema extends BaseModel {
   static $columns = ['channelId', 'createdAt', 'kickedId', 'kickerId', 'updatedAt'] as const
   $columns = KickDirectionSchema.$columns
